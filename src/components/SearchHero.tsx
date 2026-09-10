@@ -11,9 +11,6 @@ import {
   Flame,
   Radio,
   Navigation,
-  Instagram,
-  Facebook,
-  Twitter,
   ChevronDown,
 } from 'lucide-react';
 import { Train } from '../types/train';
@@ -96,8 +93,8 @@ export const SearchHero: React.FC<SearchHeroProps> = ({
 
   return (
     <div className="relative">
-      {/* ===== FULL-SCREEN HERO WITH BACKGROUND IMAGE ===== */}
-      <section className="relative h-screen min-h-[700px] flex items-center justify-center overflow-hidden">
+      {/* ===== FULL-SCREEN HERO WITH CINEMATIC IMAGE ===== */}
+      <section className="relative h-screen min-h-[720px] flex items-center justify-center overflow-hidden">
         {/* Background Image */}
         <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat scale-105"
@@ -107,20 +104,40 @@ export const SearchHero: React.FC<SearchHeroProps> = ({
         {/* Gradient Overlay */}
         <div className="absolute inset-0 hero-overlay" />
 
-        {/* Vignette */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_40%,rgba(5,10,5,0.7)_100%)]" />
+        {/* Radial Vignette */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_40%,rgba(5,10,5,0.75)_100%)]" />
 
-        {/* Social Media Side Bar (like reference) */}
-        <div className="absolute right-6 top-1/2 -translate-y-1/2 z-20 hidden lg:flex flex-col gap-4">
-          {[Instagram, Facebook, Twitter].map((Icon, idx) => (
-            <a
-              key={idx}
-              href="#"
-              className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white/70 hover:text-green-400 hover:border-green-400/50 hover:bg-green-500/10 transition-all duration-300"
-            >
-              <Icon className="w-4 h-4" />
-            </a>
-          ))}
+        {/* Social Media Side Bar (as in reference UI) */}
+        <div className="absolute right-6 top-1/2 -translate-y-1/2 z-20 hidden lg:flex flex-col gap-3">
+          <a
+            href="#"
+            className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white/70 hover:text-green-400 hover:border-green-400/50 hover:bg-green-500/10 transition-all duration-300"
+            title="Instagram"
+          >
+            <svg className="w-4 h-4 fill-none stroke-currentColor stroke-2" viewBox="0 0 24 24">
+              <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+              <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+              <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+            </svg>
+          </a>
+          <a
+            href="#"
+            className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white/70 hover:text-green-400 hover:border-green-400/50 hover:bg-green-500/10 transition-all duration-300"
+            title="Facebook"
+          >
+            <svg className="w-4 h-4 fill-currentColor" viewBox="0 0 24 24">
+              <path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1v2h3v3h-3v6.95c5.05-.5 9-4.76 9-9.95z"/>
+            </svg>
+          </a>
+          <a
+            href="#"
+            className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white/70 hover:text-green-400 hover:border-green-400/50 hover:bg-green-500/10 transition-all duration-300"
+            title="X (Twitter)"
+          >
+            <svg className="w-3.5 h-3.5 fill-currentColor" viewBox="0 0 24 24">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+            </svg>
+          </a>
         </div>
 
         {/* Hero Content */}
@@ -134,11 +151,11 @@ export const SearchHero: React.FC<SearchHeroProps> = ({
           >
             <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
             <span className="text-xs sm:text-sm font-medium tracking-widest uppercase text-green-300">
-              Real-Time Indian Railway Intelligence
+              A Place Where Nature and Travel Unites
             </span>
           </motion.div>
 
-          {/* Hero Headline — Playfair Display */}
+          {/* Hero Headline — Playfair Display / Serif styling matching reference */}
           <motion.h1
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -146,11 +163,12 @@ export const SearchHero: React.FC<SearchHeroProps> = ({
             className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold leading-[1.05] tracking-tight mb-6"
             style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
           >
-            <span className="text-white">Track Your </span>
-            <span className="text-gradient-green italic">Train</span>
+            <span className="text-white">Visit the </span>
+            <span className="text-gradient-green italic">Most Epic Train</span>
             <br />
-            <span className="text-white">in </span>
-            <span className="text-gradient-green italic">Real Time</span>
+            <span className="text-white">Station </span>
+            <span className="text-white">in the </span>
+            <span className="text-gradient-green italic">World</span>
           </motion.h1>
 
           {/* Subtitle */}
@@ -158,12 +176,12 @@ export const SearchHero: React.FC<SearchHeroProps> = ({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.6 }}
-            className="text-base sm:text-lg text-gray-300/90 max-w-2xl mx-auto mb-10 leading-relaxed"
+            className="text-base sm:text-lg text-gray-300/90 max-w-2xl mx-auto mb-10 leading-relaxed font-light"
           >
-            Live GPS telemetry, station platform boards, speed monitoring, and AI-powered ETA predictions across the entire Indian Railways network.
+            Live GPS telemetry, platform board indicators, speed monitoring, and AI-powered ETA forecasting for Indian Railways.
           </motion.p>
 
-          {/* Scroll CTA */}
+          {/* Scroll CTA Indicator */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -174,23 +192,22 @@ export const SearchHero: React.FC<SearchHeroProps> = ({
               href="#search-section"
               className="flex flex-col items-center gap-2 text-white/50 hover:text-green-400 transition-colors"
             >
-              <span className="text-xs tracking-widest uppercase">Search Trains Below</span>
+              <span className="text-xs tracking-widest uppercase font-mono">Explore & Search Below</span>
               <ChevronDown className="w-5 h-5 animate-bounce" />
             </a>
           </motion.div>
         </div>
       </section>
 
-      {/* ===== SEARCH SECTION BELOW HERO ===== */}
-      <section id="search-section" className="relative z-20 -mt-28 pb-8">
+      {/* ===== FLOATING SEARCH PANEL OVER HERO BOTTOM ===== */}
+      <section id="search-section" className="relative z-20 -mt-24 pb-8">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          {/* Main Search Card */}
-          <div className="glass rounded-3xl p-5 sm:p-8 shadow-[0_20px_60px_rgba(0,0,0,0.6)] relative overflow-visible">
-            {/* Top green accent line */}
-            <div className="absolute inset-x-16 top-0 h-[2px] bg-gradient-to-r from-transparent via-green-500 to-transparent" />
+          <div className="glass rounded-3xl p-5 sm:p-8 shadow-[0_20px_60px_rgba(0,0,0,0.7)] relative overflow-visible">
+            {/* Top glowing line */}
+            <div className="absolute inset-x-16 top-0 h-[2px] bg-gradient-to-r from-transparent via-green-400 to-transparent" />
 
             {/* Tab Selection */}
-            <div className="flex flex-wrap gap-2 p-1.5 bg-[#050a05]/80 rounded-2xl border border-white/5 mb-6 max-w-fit">
+            <div className="flex flex-wrap gap-2 p-1.5 bg-[#050a05] rounded-2xl border border-white/5 mb-6 max-w-fit">
               {([
                 { id: 'stations' as const, icon: ArrowRightLeft, label: 'Spot by Route' },
                 { id: 'trainNumber' as const, icon: TrainIcon, label: 'Train No. / Name' },
@@ -211,7 +228,7 @@ export const SearchHero: React.FC<SearchHeroProps> = ({
               ))}
             </div>
 
-            {/* Tab: Stations */}
+            {/* Tab 1: Stations */}
             {activeTab === 'stations' && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
@@ -284,7 +301,7 @@ export const SearchHero: React.FC<SearchHeroProps> = ({
                   </div>
                 </div>
 
-                {/* Search Button */}
+                {/* Search Button & Popular Routes */}
                 <div className="pt-3 flex flex-wrap items-center justify-between gap-3">
                   <div className="flex flex-wrap items-center gap-2 text-xs">
                     <span className="text-gray-500 flex items-center gap-1"><Flame className="w-3.5 h-3.5 text-amber-400" /> Popular:</span>
@@ -296,14 +313,15 @@ export const SearchHero: React.FC<SearchHeroProps> = ({
                     ))}
                   </div>
                   <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={onSearchStations}
-                    className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-green-500 hover:bg-green-400 text-black font-bold text-sm flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(74,222,128,0.4)] transition-all">
+                    className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-green-500 hover:bg-green-400 text-black font-bold text-sm flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(74,222,128,0.4)] transition-all"
+                  >
                     <Search className="w-4 h-4" /> Find Live Trains
                   </motion.button>
                 </div>
               </motion.div>
             )}
 
-            {/* Tab: Train Number */}
+            {/* Tab 2: Train Number */}
             {activeTab === 'trainNumber' && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
                 <div className="relative">
@@ -320,7 +338,7 @@ export const SearchHero: React.FC<SearchHeroProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   {trainSuggestions.map((train) => (
                     <motion.div key={train.id} whileHover={{ scale: 1.02 }} onClick={() => onSelectTrain(train)}
-                      className="p-3 rounded-2xl bg-[#050a05]/80 hover:bg-green-500/5 border border-white/5 hover:border-green-500/30 cursor-pointer flex items-center justify-between transition-all group">
+                      className="p-3.5 rounded-2xl bg-[#050a05] hover:bg-green-500/5 border border-white/5 hover:border-green-500/30 cursor-pointer flex items-center justify-between transition-all group">
                       <div>
                         <div className="flex items-center gap-2">
                           <span className="px-2 py-0.5 rounded bg-green-500/15 text-green-400 font-mono text-xs font-bold">{train.trainNumber}</span>
@@ -328,7 +346,7 @@ export const SearchHero: React.FC<SearchHeroProps> = ({
                         </div>
                         <p className="text-[11px] text-gray-500 mt-1">{train.sourceCode} ➔ {train.destinationCode} • {train.duration}</p>
                       </div>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 border border-green-500/20">
+                      <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-green-500/10 text-green-400 border border-green-500/20">
                         {train.currentStatus.currentSpeedKmH} km/h
                       </span>
                     </motion.div>
@@ -337,11 +355,11 @@ export const SearchHero: React.FC<SearchHeroProps> = ({
               </motion.div>
             )}
 
-            {/* Tab: Station Radar */}
+            {/* Tab 3: Station Radar */}
             {activeTab === 'stationRadar' && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
                 <label className="block text-[11px] font-mono font-medium text-green-400 uppercase mb-1.5 flex items-center gap-1.5">
-                  <Radio className="w-3.5 h-3.5" /> Select Station for Live Board
+                  <Radio className="w-3.5 h-3.5" /> Select Station for Live Departure Board
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {[
@@ -354,7 +372,7 @@ export const SearchHero: React.FC<SearchHeroProps> = ({
                       className={`p-3 rounded-2xl text-left border transition-all ${
                         selectedStationRadar === st.code
                           ? 'bg-green-500/15 border-green-400 text-white shadow-[0_0_15px_rgba(74,222,128,0.2)]'
-                          : 'bg-[#050a05]/80 border-white/5 text-gray-400 hover:border-white/10'
+                          : 'bg-[#050a05] border-white/5 text-gray-400 hover:border-white/10'
                       }`}>
                       <div className="font-mono font-bold text-xs text-green-400">{st.code}</div>
                       <div className="text-xs font-medium truncate">{st.name}</div>

@@ -28,32 +28,35 @@ export const StationRadar: React.FC<StationRadarProps> = ({ stationCode, onSelec
   };
 
   return (
-    <div className="backdrop-blur-2xl bg-slate-900/85 border border-cyan-500/30 rounded-3xl p-6 shadow-2xl relative">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-800">
+    <div className="glass rounded-3xl p-6 sm:p-8 shadow-2xl relative">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-white/10">
         <div>
           <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-lg bg-cyan-500/20 text-cyan-300 font-mono text-xs font-bold">
+            <span className="px-2.5 py-0.5 rounded-lg bg-green-500/20 text-green-300 font-mono text-xs font-bold border border-green-500/30">
               {stationInfo.code}
             </span>
-            <h3 className="text-xl font-bold text-white">
-              {stationInfo.name} Live Electronic Train Indicator
+            <h3
+              className="text-xl sm:text-2xl font-bold text-white"
+              style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+            >
+              {stationInfo.name} Live Departure Board
             </h3>
           </div>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-gray-400 mt-1">
             Real-time platform board, arriving & departing services in next {timeWindow} hours
           </p>
         </div>
 
         {/* Time Window Tabs */}
-        <div className="flex items-center gap-1 bg-slate-950/80 border border-slate-800 rounded-xl p-1 text-xs">
+        <div className="flex items-center gap-1 bg-[#050a05] border border-white/10 rounded-xl p-1 text-xs">
           {(['2', '4', '8'] as const).map((w) => (
             <button
               key={w}
               onClick={() => setTimeWindow(w)}
               className={`px-3 py-1 rounded-lg font-medium transition-all ${
                 timeWindow === w
-                  ? 'bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/40'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-green-500 text-black font-bold shadow-[0_0_12px_rgba(74,222,128,0.4)]'
+                  : 'text-gray-400 hover:text-white'
               }`}
             >
               Next {w}h
@@ -65,9 +68,9 @@ export const StationRadar: React.FC<StationRadarProps> = ({ stationCode, onSelec
       {/* Electronic Board Table */}
       <div className="space-y-3">
         {stationTrains.length === 0 ? (
-          <div className="text-center py-12 text-slate-400">
-            <Radio className="w-8 h-8 text-cyan-400 mx-auto mb-2 opacity-50 animate-pulse" />
-            <p className="text-sm font-semibold text-slate-300">No scheduled trains in this window.</p>
+          <div className="text-center py-12 text-gray-400">
+            <Radio className="w-8 h-8 text-green-400 mx-auto mb-2 opacity-50 animate-pulse" />
+            <p className="text-sm font-semibold text-gray-300">No scheduled trains in this window.</p>
           </div>
         ) : (
           stationTrains.map((train) => {
@@ -79,23 +82,25 @@ export const StationRadar: React.FC<StationRadarProps> = ({ stationCode, onSelec
               <motion.div
                 key={train.id}
                 whileHover={{ scale: 1.01 }}
-                className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 hover:border-cyan-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all"
+                className="p-4 rounded-2xl bg-[#050a05]/90 border border-white/5 hover:border-green-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all group"
               >
                 {/* Train details */}
                 <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-cyan-950 border border-cyan-500/30 text-cyan-400 shrink-0 font-mono font-bold text-xs">
+                  <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-green-950/40 border border-green-500/30 text-green-400 shrink-0 font-mono font-bold text-xs">
                     PF {stop.platform || '1'}
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-mono font-bold text-xs text-cyan-300">
+                      <span className="font-mono font-bold text-xs text-green-400">
                         {train.trainNumber}
                       </span>
-                      <h4 className="font-bold text-sm text-white">{train.trainName}</h4>
+                      <h4 className="font-bold text-sm text-white group-hover:text-green-300 transition-colors">
+                        {train.trainName}
+                      </h4>
                     </div>
-                    <div className="text-xs text-slate-400 mt-0.5">
+                    <div className="text-xs text-gray-400 mt-0.5">
                       {train.sourceName} ➔ {train.destinationName} •{' '}
-                      <span className="text-amber-300 font-medium">
+                      <span className="text-green-300/80 font-medium">
                         {isOrigin ? 'Originates Here' : isTerm ? 'Terminating Service' : 'Through Stop'}
                       </span>
                     </div>
@@ -111,7 +116,7 @@ export const StationRadar: React.FC<StationRadarProps> = ({ stationCode, onSelec
                     <span
                       className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                         stop.delayMinutes <= 0
-                          ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
+                          ? 'bg-green-500/15 text-green-300 border border-green-500/30'
                           : 'bg-rose-500/15 text-rose-300 border border-rose-500/30'
                       }`}
                     >
@@ -124,14 +129,14 @@ export const StationRadar: React.FC<StationRadarProps> = ({ stationCode, onSelec
                     <button
                       onClick={() => handlePlayStationChime(train, stop.platform)}
                       title="Play Station Audio Announcement"
-                      className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-400 hover:text-cyan-300 border border-slate-700 transition-colors"
+                      className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-green-400 hover:text-green-300 border border-white/10 transition-colors"
                     >
                       <Volume2 className="w-4 h-4" />
                     </button>
 
                     <button
                       onClick={() => onSelectTrain(train)}
-                      className="px-3.5 py-2 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 text-xs font-bold flex items-center gap-1 transition-all"
+                      className="px-3.5 py-2 rounded-xl bg-green-500/15 hover:bg-green-500/25 text-green-300 border border-green-500/30 text-xs font-bold flex items-center gap-1 transition-all"
                     >
                       Track <ArrowUpRight className="w-3.5 h-3.5" />
                     </button>

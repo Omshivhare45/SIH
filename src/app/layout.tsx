@@ -2,9 +2,9 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'RAILPULSE AI - Where is My Train | Live Train Status & Spotting',
+  title: 'RAILPULSE AI — Where is My Train | Live Train Status & Spotting',
   description:
-    'Real-time Indian Railways live train running status, GPS telemetry, speed gauge, station timelines, platform finder and coach layout.',
+    'Experience the most epic train status tracking app. Real-time Indian Railway GPS telemetry, live speedometers, platform radar boards, and AI ETA forecasting.',
 };
 
 export default function RootLayout({
@@ -13,8 +13,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark">
-      <body className="min-h-screen bg-slate-950 text-slate-100 antialiased overflow-x-hidden">
+    <html lang="en" className="dark scroll-smooth">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;1,400;1,700&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body className="bg-[#050a05] text-[#f0fdf4] antialiased min-h-screen selection:bg-green-500/30 selection:text-white">
         {children}
       </body>
     </html>
