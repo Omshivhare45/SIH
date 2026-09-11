@@ -25,7 +25,7 @@ import {
 import { Train } from '../types/train';
 import { STATIONS, POPULAR_ROUTES, TRAINS, findTrainsByQuery, PNR_RECORDS } from '../data/trainData';
 
-export type SearchTab = 'stations' | 'trainNumber' | 'stationRadar' | 'pnr';
+export type SearchTab = 'stations' | 'trainNumber' | 'stationRadar';
 
 interface SearchHeroProps {
   activeTab: SearchTab;
@@ -36,13 +36,9 @@ interface SearchHeroProps {
   setDestCode: (code: string) => void;
   trainQuery: string;
   setTrainQuery: (q: string) => void;
-  pnrQuery: string;
-  setPnrQuery: (q: string) => void;
   selectedStationRadar: string;
   setSelectedStationRadar: (code: string) => void;
   onSearchStations: () => void;
-  onSearchTrain: () => void;
-  onSearchPNR: () => void;
   onSelectTrain: (train: Train) => void;
   searched: boolean;
   onModifySearch?: () => void;
