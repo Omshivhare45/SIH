@@ -1,10 +1,14 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Volume2, VolumeX, Clock, Zap, Menu, X } from 'lucide-react';
+import { Volume2, VolumeX, Clock, Zap, Menu, X, Bell, Compass, Radio } from 'lucide-react';
 import { railAudio } from '../utils/audio';
 
-export const Navbar: React.FC = () => {
+interface NavbarProps {
+  onSelectTab?: (tab: 'stations' | 'trainNumber' | 'stationRadar') => void;
+}
+
+export const Navbar: React.FC<NavbarProps> = ({ onSelectTab }) => {
   const [timeStr, setTimeStr] = useState<string>('');
   const [soundActive, setSoundActive] = useState<boolean>(true);
   const [hornPlaying, setHornPlaying] = useState<boolean>(false);
@@ -30,7 +34,7 @@ export const Navbar: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 60);
+    const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -49,119 +53,140 @@ export const Navbar: React.FC = () => {
   };
 
   const navLinks = [
-    { label: 'Home', href: '#', active: true },
-    { label: 'Live Tracking', href: '#tracking' },
-    { label: 'PNR Status', href: '#pnr' },
-    { label: 'Stations', href: '#stations' },
-    { label: 'About', href: '#about' },
+    { label: 'Train Status', href: '#tracking', active: true },
+    { label: 'Find Trains', href: '#search', active: false },
+    { label: 'Station Board', href: '#stations', active: false },
+    { label: 'PNR Status', href: '#pnr', active: false },
   ];
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled
-          ? 'bg-[#050a05]/90 backdrop-blur-xl shadow-[0_4px_30px_rgba(0,0,0,0.5)] border-b border-green-500/10'
-          : 'bg-transparent'
+          ? 'bg-[#FAF7F2]/90 backdrop-blur-xl shadow-[0_4px_25px_rgba(28,25,23,0.06)] border-b border-[#EFE8DE]'
+          : 'bg-[#FAF7F2]/75 backdrop-blur-md border-b border-[#EFE8DE]/60'
       }`}
     >
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 h-20 flex items-center justify-between">
-        {/* Logo */}
-        <div className="flex items-center gap-3 cursor-pointer group">
-          <div className="relative w-10 h-10 rounded-full bg-green-500 flex items-center justify-center shadow-[0_0_20px_rgba(74,222,128,0.5)] group-hover:shadow-[0_0_30px_rgba(74,222,128,0.8)] transition-all duration-300">
-            <div className="w-5 h-5 rounded-full border-[2.5px] border-[#050a05]"></div>
-            <div className="absolute w-3 h-3 rounded-full bg-[#050a05] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></div>
-            <div className="absolute w-1.5 h-1.5 rounded-full bg-green-500 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+        {/* Brand Logo */}
+        <a href="#" className="flex items-center gap-3 cursor-pointer group">
+          <div className="relative w-11 h-11 rounded-2xl bg-gradient-to-tr from-[#FF5A1F] to-[#FF7A00] flex items-center justify-center shadow-[0_4px_16px_rgba(255,90,31,0.35)] group-hover:scale-105 transition-all duration-300">
+            {/* Minimalist modern train icon */}
+            <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="4" y="3" width="16" height="16" rx="3" />
+              <path d="M4 11h16" />
+              <path d="M12 3v8" />
+              <path d="m8 19-2 3" />
+              <path d="m16 19 2 3" />
+              <circle cx="8" cy="15" r="1" fill="currentColor" />
+              <circle cx="16" cy="15" r="1" fill="currentColor" />
+            </svg>
           </div>
-          <span className="text-xl font-bold tracking-wide text-white font-sans hidden sm:block">
-            RAIL<span className="text-green-400">PULSE</span>
-          </span>
-        </div>
+          <div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xl font-extrabold tracking-tight text-[#1C1917] font-sans">
+                Track<span className="text-[#FF5A1F]">Rail</span>
+              </span>
+              <span className="text-[10px] font-bold uppercase tracking-wider bg-[#FF5A1F]/10 text-[#FF5A1F] px-1.5 py-0.5 rounded-md">
+                Live
+              </span>
+            </div>
+            <p className="text-[11px] text-[#78716C] -mt-0.5 font-medium hidden sm:block">Where is my train</p>
+          </div>
+        </a>
 
         {/* Desktop Nav Links */}
-        <nav className="hidden lg:flex items-center gap-1">
+        <nav className="hidden md:flex items-center gap-1 bg-white/70 border border-[#EFE8DE] px-3 py-1.5 rounded-full shadow-xs">
           {navLinks.map((link) => (
             <a
               key={link.label}
               href={link.href}
-              className={`px-4 py-2 text-sm font-medium tracking-wide transition-all duration-300 relative ${
+              className={`px-4 py-1.5 text-sm font-semibold rounded-full transition-all duration-200 ${
                 link.active
-                  ? 'text-white'
-                  : 'text-gray-400 hover:text-white'
+                  ? 'bg-[#1C1917] text-white shadow-xs'
+                  : 'text-[#57534E] hover:text-[#1C1917] hover:bg-black/5'
               }`}
             >
               {link.label}
-              {link.active && (
-                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-5 h-[2px] bg-green-400 rounded-full" />
-              )}
             </a>
           ))}
         </nav>
 
         {/* Right Controls */}
-        <div className="flex items-center gap-3">
-          {/* IST Clock */}
-          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full glass text-xs font-mono text-gray-300">
-            <Clock className="w-3.5 h-3.5 text-green-400" />
-            <span>{timeStr || '12:00:00 PM'}</span>
+        <div className="flex items-center gap-2.5">
+          {/* Live Telemetry Status Pill */}
+          <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-[#EFE8DE] shadow-xs text-xs font-semibold text-[#1C1917]">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+            </span>
+            <span>GPS Locked</span>
+            <span className="text-[#A8A29E]">•</span>
+            <span className="font-mono text-[11px] text-[#57534E] flex items-center gap-1">
+              <Clock className="w-3 h-3 text-[#FF5A1F]" />
+              {timeStr || '12:00 PM'}
+            </span>
           </div>
 
-          {/* Horn Button */}
-          <button
-            onClick={triggerHorn}
-            className={`p-2 rounded-full transition-all duration-300 ${
-              hornPlaying
-                ? 'bg-green-500 text-black scale-110 shadow-[0_0_20px_rgba(74,222,128,0.8)]'
-                : 'glass text-green-400 hover:text-green-300'
-            }`}
-          >
-            <Zap className={`w-4 h-4 ${hornPlaying ? 'animate-bounce' : ''}`} />
-          </button>
-
-          {/* Audio Toggle */}
+          {/* Sound Toggle */}
           <button
             onClick={toggleSound}
-            className={`p-2 rounded-full transition-all duration-300 ${
+            title={soundActive ? 'IR Audio Chimes Enabled' : 'Audio Muted'}
+            className={`p-2.5 rounded-xl border transition-all duration-200 ${
               soundActive
-                ? 'glass text-green-400 hover:text-green-300'
-                : 'glass text-gray-600 hover:text-gray-400'
+                ? 'bg-white border-[#EFE8DE] text-[#FF5A1F] shadow-xs hover:border-[#FF5A1F]/40'
+                : 'bg-white/50 border-[#EFE8DE] text-[#A8A29E]'
             }`}
           >
             {soundActive ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
           </button>
 
-          {/* Contact Us CTA */}
-          <a
-            href="#tracking"
-            className="hidden sm:inline-flex px-5 py-2 rounded-full border border-white/30 text-sm font-medium text-white hover:bg-white hover:text-black transition-all duration-300"
+          {/* Loco Horn Button */}
+          <button
+            onClick={triggerHorn}
+            disabled={hornPlaying}
+            title="Blow Indian Railways Locomotive Horn"
+            className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-[#FFF2EB] text-[#FF5A1F] border border-[#FF5A1F]/30 hover:bg-[#FFE5D6] active:scale-95 transition-all duration-200 shadow-xs"
           >
-            Track Now
-          </a>
+            <Zap className={`w-3.5 h-3.5 ${hornPlaying ? 'animate-bounce text-[#FF5A1F]' : ''}`} />
+            <span>Horn</span>
+          </button>
+
+          {/* Notification Button */}
+          <button
+            className="p-2.5 rounded-xl bg-white border border-[#EFE8DE] text-[#57534E] hover:text-[#1C1917] hover:border-[#D6CEC4] shadow-xs transition-all"
+            title="Station Delay Alerts"
+          >
+            <Bell className="w-4 h-4" />
+          </button>
 
           {/* Mobile Menu Toggle */}
           <button
             onClick={() => setMenuOpen(!menuOpen)}
-            className="lg:hidden p-2 rounded-full glass text-white"
+            className="md:hidden p-2.5 rounded-xl bg-white border border-[#EFE8DE] text-[#1C1917]"
           >
             {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </div>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile Drawer */}
       {menuOpen && (
-        <div className="lg:hidden absolute top-20 left-0 right-0 bg-[#050a05]/95 backdrop-blur-xl border-b border-green-500/10 p-6 space-y-2">
+        <div className="md:hidden bg-white/95 backdrop-blur-xl border-b border-[#EFE8DE] px-6 py-5 space-y-3 shadow-lg">
           {navLinks.map((link) => (
             <a
               key={link.label}
               href={link.href}
               onClick={() => setMenuOpen(false)}
-              className={`block px-4 py-3 rounded-xl text-sm font-medium ${
-                link.active ? 'text-green-400 bg-green-500/10' : 'text-gray-400 hover:text-white'
-              }`}
+              className="block text-sm font-semibold text-[#1C1917] hover:text-[#FF5A1F] py-2 border-b border-[#F5EFEA]"
             >
               {link.label}
             </a>
           ))}
+          <div className="pt-2 flex items-center justify-between text-xs text-[#78716C] font-mono">
+            <span>IST Time: {timeStr}</span>
+            <span className="text-emerald-600 font-bold">GPS Active</span>
+          </div>
         </div>
       )}
     </header>

@@ -2,9 +2,9 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'RAILPULSE AI — Where is My Train | Live Train Status & Spotting',
+  title: 'TrackRail — Live Train Status & Spotting',
   description:
-    'Experience the most epic train status tracking app. Real-time Indian Railway GPS telemetry, live speedometers, platform radar boards, and AI ETA forecasting.',
+    'Real-time Indian Railways live train status, GPS telemetry, station arrival boards, platform locators, and interactive route tracker.',
 };
 
 export default function RootLayout({
@@ -13,16 +13,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark scroll-smooth">
+    <html lang="en" className="scroll-smooth">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;1,400;1,700&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
           rel="stylesheet"
         />
       </head>
-      <body className="bg-[#050a05] text-[#f0fdf4] antialiased min-h-screen selection:bg-green-500/30 selection:text-white">
+      <body className="bg-[#F7F3EE] text-[#1C1917] antialiased min-h-screen selection:bg-[#FF5A1F]/20 selection:text-[#1C1917]">
         {children}
       </body>
     </html>

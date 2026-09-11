@@ -15,7 +15,10 @@ import {
   TrendingUp,
   ShieldCheck,
   Compass,
-  Heart
+  Heart,
+  Clock,
+  Ticket,
+  ExternalLink
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Navbar } from '../components/Navbar';
@@ -37,8 +40,8 @@ export default function Home() {
   const [trainQuery, setTrainQuery] = useState<string>('');
   const [selectedStationRadar, setSelectedStationRadar] = useState<string>('NDLS');
 
-  // Active Live Train selection for modal/tracker
-  const [selectedLiveTrain, setSelectedLiveTrain] = useState<Train | null>(null);
+  // Active Live Train selection for modal/tracker (defaults to 22436 Vande Bharat)
+  const [selectedLiveTrain, setSelectedLiveTrain] = useState<Train | null>(TRAINS[0]);
   const [coachModalTrain, setCoachModalTrain] = useState<Train | null>(null);
   const [searched, setSearched] = useState<boolean>(true);
 
@@ -56,36 +59,41 @@ export default function Home() {
 
   const handleSearchStations = () => {
     setSearched(true);
-    setSelectedLiveTrain(null);
     confetti({
       particleCount: 50,
       spread: 60,
       origin: { y: 0.5 },
-      colors: ['#4ade80', '#22c55e', '#16a34a'],
+      colors: ['#FF5A1F', '#FF7A00', '#1C1917'],
     });
+    // Smoothly scroll down to search results
+    setTimeout(() => {
+      const resultsEl = document.getElementById('search-results');
+      if (resultsEl) resultsEl.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
   };
 
   const handleSelectTrain = (train: Train) => {
     setSelectedLiveTrain(train);
     setTimeout(() => {
-      window.scrollTo({
-        top: window.innerHeight - 80,
-        behavior: 'smooth',
-      });
+      const trackEl = document.getElementById('tracking');
+      if (trackEl) {
+        trackEl.scrollIntoView({ behavior: 'smooth' });
+      }
     }, 100);
   };
 
   return (
-    <main className="min-h-screen bg-[#050a05] text-[#f0fdf4] relative overflow-x-hidden">
-      {/* Floating Green Glow Particles */}
+    <main className="min-h-screen bg-[#F7F3EE] text-[#1C1917] relative overflow-x-hidden">
+      {/* Floating Warm Golden Particles */}
       <ParticleBackground />
 
-      {/* Top Navbar */}
+      {/* Top Desktop Navbar */}
       <Navbar />
 
       {/* Main Content Area */}
       <div className="relative z-10 pb-20">
-        {/* Full-Screen Hero & Search Section */}
+        
+        {/* Full Desktop Hero & Search Section */}
         <SearchHero
           activeTab={activeTab}
           setActiveTab={setActiveTab}
@@ -101,26 +109,26 @@ export default function Home() {
           onSelectTrain={handleSelectTrain}
         />
 
-        {/* Live Train Spotlight Tracker View */}
+        {/* Live Train Spotlight Tracker View (Where Is My Train Core Experience) */}
         <AnimatePresence>
           {selectedLiveTrain && (
             <motion.div
               id="tracking"
-              initial={{ opacity: 0, scale: 0.98 }}
+              initial={{ opacity: 0, scale: 0.99 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.98 }}
-              className="mt-8"
+              exit={{ opacity: 0, scale: 0.99 }}
+              className="mt-6"
             >
-              <div className="max-w-5xl mx-auto px-4 sm:px-6 flex items-center justify-between mb-3">
-                <span className="text-xs font-mono font-bold text-green-400 flex items-center gap-1.5">
-                  <Navigation className="w-3.5 h-3.5 animate-spin text-green-400" />
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between mb-2">
+                <span className="text-xs font-mono font-bold text-[#FF5A1F] flex items-center gap-1.5">
+                  <Navigation className="w-3.5 h-3.5 animate-pulse text-[#FF5A1F]" />
                   REAL-TIME GPS TELEMETRY ACTIVE
                 </span>
                 <button
                   onClick={() => setSelectedLiveTrain(null)}
-                  className="text-xs text-gray-400 hover:text-green-300 underline font-mono transition-colors"
+                  className="text-xs text-[#78716C] hover:text-[#1C1917] underline font-mono transition-colors cursor-pointer"
                 >
-                  ← Close Live View
+                  Collapse Live View
                 </button>
               </div>
 
@@ -132,116 +140,82 @@ export default function Home() {
           )}
         </AnimatePresence>
 
-        {/* Tab 3: Station Radar Board */}
-        {activeTab === 'stationRadar' && !selectedLiveTrain && (
-          <div id="stations" className="max-w-5xl mx-auto px-4 sm:px-6 mt-8">
-            <StationRadar
-              stationCode={selectedStationRadar}
-              onSelectTrain={handleSelectTrain}
-            />
-          </div>
-        )}
-
-        {/* Station Search Results View */}
-        {activeTab === 'stations' && !selectedLiveTrain && (
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 mt-10 space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
-              <div>
-                <h3
-                  className="text-2xl font-bold text-white flex items-center gap-2"
-                  style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
-                >
-                  <TrainIcon className="w-5 h-5 text-green-400" />
-                  Trains between <span className="text-green-400">{sourceCode}</span> and <span className="text-emerald-400">{destCode}</span>
+        {/* Station Search Results Section */}
+        <div id="search-results" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#EFE8DE] pb-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#FF5A1F]" />
+                <h3 className="text-2xl font-extrabold text-[#1C1917]">
+                  Trains between <span className="text-[#FF5A1F]">{sourceCode}</span> and <span className="text-[#1C1917]">{destCode}</span>
                 </h3>
-                <p className="text-xs text-gray-400 mt-1">
-                  {displayTrains.length} High-Speed & Superfast Express Services Available
-                </p>
               </div>
-
-              <div className="flex items-center gap-2 text-xs text-green-400 font-mono bg-green-500/10 px-3.5 py-1.5 rounded-xl border border-green-500/30">
-                <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-                99.4% Network Telemetry Live
-              </div>
-            </div>
-
-            {/* List of Train Cards */}
-            <div className="space-y-4">
-              {displayTrains.map((train) => (
-                <TrainCard
-                  key={train.id}
-                  train={train}
-                  onTrackLive={handleSelectTrain}
-                  onOpenCoach={(t) => setCoachModalTrain(t)}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Direct Train Number List if Tab is Train Number and no specific live train open */}
-        {activeTab === 'trainNumber' && !selectedLiveTrain && (
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 mt-10 space-y-4">
-            <div className="border-b border-white/10 pb-4">
-              <h3
-                className="text-2xl font-bold text-white flex items-center gap-2"
-                style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
-              >
-                <Sparkles className="w-5 h-5 text-green-400" />
-                Featured Indian Railway Services
-              </h3>
-              <p className="text-xs text-gray-400 mt-1">
-                Click any train to track live GPS, speedometer, and station countdown
+              <p className="text-xs text-[#78716C] mt-1 font-medium">
+                {displayTrains.length} High-Speed & Superfast Express Services Available for Today
               </p>
             </div>
 
-            <div className="space-y-4">
-              {TRAINS.map((train) => (
-                <TrainCard
-                  key={train.id}
-                  train={train}
-                  onTrackLive={handleSelectTrain}
-                  onOpenCoach={(t) => setCoachModalTrain(t)}
-                />
-              ))}
+            <div className="flex items-center gap-2 text-xs text-[#1C1917] font-mono bg-white px-3.5 py-1.5 rounded-2xl border border-[#EFE8DE] shadow-xs">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span>99.4% Network Telemetry Live</span>
             </div>
           </div>
-        )}
+
+          {/* List of Train Cards */}
+          <div className="space-y-4">
+            {displayTrains.map((train) => (
+              <TrainCard
+                key={train.id}
+                train={train}
+                onTrackLive={handleSelectTrain}
+                onOpenCoach={(t) => setCoachModalTrain(t)}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Live Station Radar Board */}
+        <div id="stations" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-14">
+          <StationRadar
+            stationCode={selectedStationRadar}
+            onSelectTrain={handleSelectTrain}
+          />
+        </div>
 
         {/* Live Network Telemetry Stats & Quick Features Grid */}
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 mt-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-14">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <div className="glass rounded-3xl p-5 flex items-center gap-4 border border-white/5 hover:border-green-500/30 transition-all">
-              <div className="w-12 h-12 rounded-2xl bg-green-500/10 border border-green-500/30 flex items-center justify-center text-green-400 shrink-0">
+            <div className="bg-white rounded-3xl p-6 flex items-center gap-4 border border-[#EFE8DE] shadow-soft hover:shadow-card-hover transition-all">
+              <div className="w-12 h-12 rounded-2xl bg-[#FFF2EB] border border-[#FF5A1F]/20 flex items-center justify-center text-[#FF5A1F] shrink-0">
                 <TrendingUp className="w-6 h-6" />
               </div>
               <div>
-                <span className="text-[11px] font-mono text-gray-400 uppercase">Average Punctuality</span>
-                <div className="text-xl font-bold text-white font-mono mt-0.5">
-                  98.2% <span className="text-green-400 text-xs font-sans font-normal">On Time</span>
+                <span className="text-[11px] font-mono font-bold text-[#78716C] uppercase">Average Punctuality</span>
+                <div className="text-xl font-black text-[#1C1917] font-mono mt-0.5">
+                  98.2% <span className="text-emerald-600 text-xs font-sans font-bold">On Time</span>
                 </div>
               </div>
             </div>
 
-            <div className="glass rounded-3xl p-5 flex items-center gap-4 border border-white/5 hover:border-green-500/30 transition-all">
-              <div className="w-12 h-12 rounded-2xl bg-green-500/10 border border-green-500/30 flex items-center justify-center text-green-400 shrink-0">
+            <div className="bg-white rounded-3xl p-6 flex items-center gap-4 border border-[#EFE8DE] shadow-soft hover:shadow-card-hover transition-all">
+              <div className="w-12 h-12 rounded-2xl bg-[#FFF2EB] border border-[#FF5A1F]/20 flex items-center justify-center text-[#FF5A1F] shrink-0">
                 <Radio className="w-6 h-6 animate-pulse" />
               </div>
               <div>
-                <span className="text-[11px] font-mono text-gray-400 uppercase">ISRO NavIC Telemetry</span>
-                <div className="text-xl font-bold text-white font-mono mt-0.5">
-                  24/24 Sats <span className="text-green-400 text-xs font-sans font-normal">Locked</span>
+                <span className="text-[11px] font-mono font-bold text-[#78716C] uppercase">ISRO NavIC Telemetry</span>
+                <div className="text-xl font-black text-[#1C1917] font-mono mt-0.5">
+                  24/24 Sats <span className="text-emerald-600 text-xs font-sans font-bold">Locked</span>
                 </div>
               </div>
             </div>
 
-            <div className="glass rounded-3xl p-5 flex items-center gap-4 border border-white/5 hover:border-green-500/30 transition-all">
-              <div className="w-12 h-12 rounded-2xl bg-green-500/10 border border-green-500/30 flex items-center justify-center text-green-400 shrink-0">
+            <div className="bg-white rounded-3xl p-6 flex items-center gap-4 border border-[#EFE8DE] shadow-soft hover:shadow-card-hover transition-all">
+              <div className="w-12 h-12 rounded-2xl bg-[#FFF2EB] border border-[#FF5A1F]/20 flex items-center justify-center text-[#FF5A1F] shrink-0">
                 <ShieldCheck className="w-6 h-6" />
               </div>
               <div>
-                <span className="text-[11px] font-mono text-gray-400 uppercase">Kavach Safety Grid</span>
-                <div className="text-xl font-bold text-white font-mono mt-0.5">
+                <span className="text-[11px] font-mono font-bold text-[#78716C] uppercase">Kavach Safety Grid</span>
+                <div className="text-xl font-black text-[#1C1917] font-mono mt-0.5">
                   100% Active
                 </div>
               </div>
@@ -255,22 +229,24 @@ export default function Home() {
         </div>
 
         {/* Footer */}
-        <footer id="about" className="max-w-5xl mx-auto px-4 sm:px-6 mt-20 pt-8 border-t border-white/10 text-center text-xs text-gray-500">
+        <footer id="about" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-20 pt-8 border-t border-[#EFE8DE] text-xs text-[#78716C]">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
-                <div className="w-3 h-3 rounded-full border-2 border-[#050a05]"></div>
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-xl bg-[#FF5A1F] flex items-center justify-center text-white shadow-xs">
+                <TrainIcon className="w-4 h-4" />
               </div>
-              <span className="font-bold text-sm text-white">RAIL<span className="text-green-400">PULSE</span></span>
-              <span className="text-gray-600">|</span>
-              <span>Next-Gen Train Status App</span>
+              <span className="font-extrabold text-sm text-[#1C1917]">
+                Track<span className="text-[#FF5A1F]">Rail</span>
+              </span>
+              <span className="text-[#D6CEC4]">|</span>
+              <span>Where Is My Train Desktop Live Status</span>
             </div>
 
-            <div className="flex items-center gap-6">
-              <a href="#" className="hover:text-green-400 transition-colors">Privacy</a>
-              <a href="#" className="hover:text-green-400 transition-colors">Terms</a>
-              <a href="#" className="hover:text-green-400 transition-colors">IRCTC APIs</a>
-              <a href="#" className="hover:text-green-400 transition-colors">Status</a>
+            <div className="flex items-center gap-6 font-medium">
+              <a href="#" className="hover:text-[#FF5A1F] transition-colors">Privacy Policy</a>
+              <a href="#" className="hover:text-[#FF5A1F] transition-colors">Terms of Service</a>
+              <a href="#" className="hover:text-[#FF5A1F] transition-colors">IRCTC Live API</a>
+              <a href="#" className="hover:text-[#FF5A1F] transition-colors">CRIS Grid</a>
             </div>
           </div>
         </footer>
@@ -287,7 +263,7 @@ export default function Home() {
                 particleCount: 100,
                 spread: 70,
                 origin: { y: 0.6 },
-                colors: ['#4ade80', '#22c55e', '#16a34a'],
+                colors: ['#FF5A1F', '#FF7A00', '#10B981'],
               });
             }}
           />

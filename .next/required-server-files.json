@@ -105,7 +105,7 @@
         "transform": "lodash/{{member}}"
       }
     },
-    "outputFileTracingRoot": "D:\\railway_frontend",
+    "outputFileTracingRoot": "C:\\Users\\ritik\\OneDrive\\Desktop\\SIH\\SIH",
     "enablePrerenderSourceMaps": true,
     "cacheComponents": false,
     "cacheLife": {
@@ -320,13 +320,13 @@
     "htmlLimitedBots": "[\\w-]+-Google|Google-[\\w-]+|Chrome-Lighthouse|Slurp|DuckDuckBot|baiduspider|yandex|sogou|bitlybot|tumblr|vkShare|quora link preview|redditbot|ia_archiver|Bingbot|BingPreview|applebot|facebookexternalhit|facebookcatalog|Twitterbot|LinkedInBot|Slackbot|Discordbot|WhatsApp|SkypeUriPreview|Yeti|googleweblight",
     "bundlePagesRouterDependencies": false,
     "configFileName": "next.config.ts",
-    "repoRoot": "D:\\railway_frontend",
+    "repoRoot": "C:\\Users\\ritik\\OneDrive\\Desktop\\SIH\\SIH",
     "turbopack": {
-      "root": "D:\\railway_frontend"
+      "root": "C:\\Users\\ritik\\OneDrive\\Desktop\\SIH\\SIH"
     },
     "distDirRoot": ".next"
   },
-  "appDir": "D:\\railway_frontend",
+  "appDir": "C:\\Users\\ritik\\OneDrive\\Desktop\\SIH\\SIH",
   "relativeAppDir": "",
   "files": [
     ".next\\package.json",

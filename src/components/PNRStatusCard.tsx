@@ -2,10 +2,14 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Ticket, Search, CheckCircle2, AlertCircle, Shield, Sparkles } from 'lucide-react';
+import { Ticket, Search, CheckCircle2, AlertCircle, Shield, Sparkles, Navigation } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
-export const PNRStatusCard: React.FC = () => {
+interface PNRStatusCardProps {
+  onTrackTrainByNumber?: (trainNum: string) => void;
+}
+
+export const PNRStatusCard: React.FC<PNRStatusCardProps> = ({ onTrackTrainByNumber }) => {
   const [pnrInput, setPnrInput] = useState<string>('2415893201');
   const [result, setResult] = useState<any | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
@@ -19,92 +23,109 @@ export const PNRStatusCard: React.FC = () => {
         pnr: pnrInput,
         trainNumber: '22436',
         trainName: 'Vande Bharat Express',
-        date: 'Tomorrow, 06:00 AM',
+        date: 'Today, 06:00 AM',
         from: 'New Delhi (NDLS)',
         to: 'Varanasi Jn (BSB)',
-        coach: 'C3',
+        coach: 'E1',
         seat: 'Seat 42 (Window)',
         bookingStatus: 'CNF (Confirmed)',
         chartStatus: 'Chart Prepared • Coach Position Locked',
+        prediction: '100% Guaranteed',
       });
       confetti({
         particleCount: 60,
         spread: 60,
         origin: { y: 0.7 },
-        colors: ['#4ade80', '#22c55e', '#16a34a'],
+        colors: ['#FF5A1F', '#FF7A00', '#10B981'],
       });
     }, 600);
   };
 
   return (
-    <div className="glass rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+    <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-soft border border-[#EFE8DE] relative overflow-hidden">
       <div className="flex items-center gap-3 mb-6">
-        <div className="p-3 rounded-2xl bg-green-500/10 text-green-400 border border-green-500/30">
+        <div className="p-3 rounded-2xl bg-[#FFF2EB] text-[#FF5A1F] border border-[#FF5A1F]/20">
           <Ticket className="w-5 h-5" />
         </div>
         <div>
-          <h3
-            className="font-bold text-xl text-white"
-            style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
-          >
-            PNR Status & Confirmation Predictor
+          <h3 className="font-extrabold text-xl text-[#1C1917]">
+            PNR Status & Confirmation Tracker
           </h3>
-          <p className="text-xs text-gray-400">10-Digit Indian Railways PNR Live Query</p>
+          <p className="text-xs text-[#78716C]">Instant 10-Digit Indian Railways PNR Query & Coach Position</p>
         </div>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-2.5">
-        <input
-          type="text"
-          placeholder="Enter 10-digit PNR Number..."
-          value={pnrInput}
-          onChange={(e) => setPnrInput(e.target.value)}
-          maxLength={10}
-          className="flex-1 px-4 py-3.5 rounded-2xl bg-[#050a05] border border-white/10 text-white font-mono text-sm focus:outline-none focus:border-green-400 transition-colors"
-        />
+        <div className="relative flex-1">
+          <input
+            type="text"
+            placeholder="Enter 10-digit PNR Number..."
+            value={pnrInput}
+            onChange={(e) => setPnrInput(e.target.value)}
+            className="w-full px-4 py-3.5 rounded-2xl bg-[#FAF7F2] border border-[#EFE8DE] text-sm font-semibold text-[#1C1917] placeholder-[#A8A29E] focus:outline-none focus:border-[#FF5A1F] transition-all font-mono"
+          />
+        </div>
         <button
           onClick={handleCheckPNR}
           disabled={loading}
-          className="px-6 py-3.5 rounded-2xl bg-green-500 hover:bg-green-400 text-black font-bold text-xs flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(74,222,128,0.4)] transition-all"
+          className="px-6 py-3.5 rounded-2xl bg-[#FF5A1F] hover:bg-[#E44810] text-white text-sm font-bold shadow-orange-glow transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
         >
           <Search className="w-4 h-4" />
-          {loading ? 'Checking...' : 'Check Status'}
+          <span>{loading ? 'Verifying...' : 'Check Status'}</span>
         </button>
       </div>
 
+      {/* Result Card: Boarding pass format inspired by reference image */}
       {result && (
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mt-5 p-5 rounded-2xl bg-[#050a05] border border-green-500/20 space-y-3"
+          className="mt-6 p-6 rounded-2xl bg-[#FAF7F2] border border-[#EFE8DE] relative"
         >
-          <div className="flex items-center justify-between border-b border-white/10 pb-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-[#EFE8DE]">
             <div>
-              <span className="text-[10px] font-mono text-gray-500 block">PNR NUMBER</span>
-              <span className="font-mono font-bold text-white text-sm">{result.pnr}</span>
+              <span className="text-[10px] uppercase font-bold text-[#78716C] block">PNR Number</span>
+              <span className="text-lg font-mono font-black text-[#1C1917]">{result.pnr}</span>
             </div>
-            <span className="px-3 py-1 rounded-full bg-green-500/20 text-green-300 border border-green-500/40 text-xs font-bold flex items-center gap-1">
-              <CheckCircle2 className="w-3.5 h-3.5" /> {result.bookingStatus}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 font-bold text-xs border border-emerald-200 flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                {result.bookingStatus}
+              </span>
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 text-xs">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 my-4 text-xs">
             <div>
-              <span className="text-gray-500 block">Train:</span>
-              <strong className="text-white">{result.trainNumber} - {result.trainName}</strong>
+              <span className="text-[10px] uppercase font-semibold text-[#78716C] block">Train</span>
+              <span className="font-bold text-[#1C1917]">{result.trainNumber} {result.trainName}</span>
             </div>
             <div>
-              <span className="text-gray-500 block">Journey:</span>
-              <strong className="text-gray-300">{result.from} ➔ {result.to}</strong>
+              <span className="text-[10px] uppercase font-semibold text-[#78716C] block">Journey Date</span>
+              <span className="font-bold text-[#1C1917]">{result.date}</span>
             </div>
             <div>
-              <span className="text-gray-500 block">Seat Allocated:</span>
-              <strong className="text-green-400 font-medium">{result.coach}, {result.seat}</strong>
+              <span className="text-[10px] uppercase font-semibold text-[#78716C] block">Coach & Berth</span>
+              <span className="font-bold text-[#FF5A1F]">{result.coach} • {result.seat}</span>
             </div>
             <div>
-              <span className="text-gray-500 block">Charting:</span>
-              <strong className="text-green-300 font-medium">{result.chartStatus}</strong>
+              <span className="text-[10px] uppercase font-semibold text-[#78716C] block">Chart Status</span>
+              <span className="font-bold text-emerald-600">Chart Prepared</span>
             </div>
+          </div>
+
+          {/* Barcode Strip */}
+          <div className="pt-3 border-t border-dashed border-[#EFE8DE] flex items-center justify-between">
+            <span className="font-mono text-xs tracking-widest text-[#78716C]">
+              |||| | ||||| || |||||| | |||| ||||
+            </span>
+            <a
+              href="#tracking"
+              className="text-xs font-bold text-[#FF5A1F] hover:underline flex items-center gap-1"
+            >
+              <Navigation className="w-3.5 h-3.5" />
+              Track This Train Live ➔
+            </a>
           </div>
         </motion.div>
       )}

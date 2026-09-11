@@ -22,7 +22,7 @@ export const ParticleBackground: React.FC = () => {
     };
     window.addEventListener('resize', handleResize);
 
-    // Floating subtle green particles
+    // Warm subtle ambient floating particles
     const particles: Array<{
       x: number;
       y: number;
@@ -33,14 +33,14 @@ export const ParticleBackground: React.FC = () => {
       pulse: number;
     }> = [];
 
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < 35; i++) {
       particles.push({
         x: Math.random() * width,
         y: Math.random() * height,
-        vx: (Math.random() - 0.5) * 0.3,
-        vy: -Math.random() * 0.4 - 0.1,
-        size: Math.random() * 2 + 0.8,
-        alpha: Math.random() * 0.35 + 0.1,
+        vx: (Math.random() - 0.5) * 0.25,
+        vy: -Math.random() * 0.3 - 0.08,
+        size: Math.random() * 2.2 + 0.6,
+        alpha: Math.random() * 0.25 + 0.08,
         pulse: Math.random() * Math.PI * 2,
       });
     }
@@ -63,13 +63,13 @@ export const ParticleBackground: React.FC = () => {
         const flicker = Math.sin(p.pulse) * 0.2 + 0.8;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(74, 222, 128, ${p.alpha * flicker})`;
+        ctx.fillStyle = `rgba(255, 90, 31, ${p.alpha * flicker * 0.5})`;
         ctx.fill();
 
-        // Soft outer aura
+        // Soft outer halo
         ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size * 3, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(74, 222, 128, ${p.alpha * flicker * 0.1})`;
+        ctx.arc(p.x, p.y, p.size * 2.5, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 140, 50, ${p.alpha * flicker * 0.12})`;
         ctx.fill();
       });
 
@@ -86,8 +86,8 @@ export const ParticleBackground: React.FC = () => {
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 pointer-events-none z-[1]"
-      style={{ opacity: 0.6 }}
+      className="fixed inset-0 pointer-events-none z-[0]"
+      style={{ opacity: 0.7 }}
     />
   );
 };
