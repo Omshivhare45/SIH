@@ -14,28 +14,38 @@ import {
   Navigation,
   ChevronDown,
   ShieldCheck,
-  CloudSun,
   Flame,
   ArrowRight,
   Sparkles,
   CheckCircle2,
+  SlidersHorizontal,
+  RotateCcw,
+  Ticket,
 } from 'lucide-react';
 import { Train } from '../types/train';
-import { STATIONS, POPULAR_ROUTES, TRAINS } from '../data/trainData';
+import { STATIONS, POPULAR_ROUTES, TRAINS, findTrainsByQuery, PNR_RECORDS } from '../data/trainData';
+
+export type SearchTab = 'stations' | 'trainNumber' | 'stationRadar' | 'pnr';
 
 interface SearchHeroProps {
-  activeTab: 'stations' | 'trainNumber' | 'stationRadar';
-  setActiveTab: (tab: 'stations' | 'trainNumber' | 'stationRadar') => void;
+  activeTab: SearchTab;
+  setActiveTab: (tab: SearchTab) => void;
   sourceCode: string;
   setSourceCode: (code: string) => void;
   destCode: string;
   setDestCode: (code: string) => void;
   trainQuery: string;
   setTrainQuery: (q: string) => void;
+  pnrQuery: string;
+  setPnrQuery: (q: string) => void;
   selectedStationRadar: string;
   setSelectedStationRadar: (code: string) => void;
   onSearchStations: () => void;
+  onSearchTrain: () => void;
+  onSearchPNR: () => void;
   onSelectTrain: (train: Train) => void;
+  searched: boolean;
+  onModifySearch?: () => void;
 }
 
 export const SearchHero: React.FC<SearchHeroProps> = ({
@@ -51,6 +61,8 @@ export const SearchHero: React.FC<SearchHeroProps> = ({
   setSelectedStationRadar,
   onSearchStations,
   onSelectTrain,
+  searched,
+  onModifySearch,
 }) => {
   const [sourceDropdownOpen, setSourceDropdownOpen] = useState(false);
   const [destDropdownOpen, setDestDropdownOpen] = useState(false);
@@ -59,9 +71,7 @@ export const SearchHero: React.FC<SearchHeroProps> = ({
   const [destFilter, setDestFilter] = useState('');
   const [travelDate, setTravelDate] = useState('Today, 11 Sep');
   const [isSwapping, setIsSwapping] = useState(false);
-
-  // Spotlight featured train (defaults to 22436 Vande Bharat or first train)
-  const featuredTrain = TRAINS[0];
+  const [isExpanded, setIsExpanded] = useState(true);
 
   const filteredSources = useMemo(() => {
     return STATIONS.filter(
@@ -95,7 +105,8 @@ export const SearchHero: React.FC<SearchHeroProps> = ({
     );
   }, [trainQuery]);
 
-  const handleSwapStations = () => {
+  const handleSwapStations = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     setIsSwapping(true);
     const temp = sourceCode;
     setSourceCode(destCode);
@@ -113,76 +124,143 @@ export const SearchHero: React.FC<SearchHeroProps> = ({
     return found ? found.city : code;
   };
 
-  return (
-    <section id="search" className="pt-28 pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-      {/* Top Welcome & Subtitle */}
-      <div className="mb-8">
-        <div className="flex flex-wrap items-center gap-2 mb-2">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#FFF2EB] text-[#FF5A1F] border border-[#FF5A1F]/20">
-            <Radio className="w-3.5 h-3.5 animate-pulse text-[#FF5A1F]" />
-            ISRO NavIC Telemetry Active
-          </span>
-          <span className="text-xs font-semibold text-[#78716C] bg-white px-3 py-1 rounded-full border border-[#EFE8DE]">
-            13,000+ Indian Trains Tracked Live
-          </span>
-        </div>
-        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#1C1917] tracking-tight leading-tight">
-          Where is your train? <span className="text-[#FF5A1F]">Track it live.</span>
-        </h1>
-        <p className="text-sm sm:text-base text-[#78716C] mt-2 max-w-2xl font-normal">
-          Accurate real-time train running status, expected platform numbers, delay countdowns, and GPS spotter inspired by Where Is My Train.
-        </p>
-      </div>
+  // ==========================================
+  // CASE 1: SEARCHED STATE (COMPACT TOP BAR)
+  // ==========================================
+  if (searched && !isExpanded) {
+    return (
+      <section className="pt-24 pb-4 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="bg-white rounded-3xl p-4 sm:p-5 shadow-soft border border-[#EFE8DE] flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className="w-8 h-8 rounded-xl bg-[#FFF2EB] text-[#FF5A1F] flex items-center justify-center font-bold text-xs">
+                {sourceCode}
+              </span>
+              <span className="text-sm font-bold text-[#1C1917]">{getStationShort(sourceCode)}</span>
+            </div>
 
-      {/* Main Desktop Grid: Left Search Panel + Right Boarding Pass Spotlight */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            <button
+              onClick={handleSwapStations}
+              className={`p-1.5 rounded-full bg-[#FAF7F2] hover:bg-[#FFF2EB] text-[#FF5A1F] border border-[#EFE8DE] transition-transform ${
+                isSwapping ? 'rotate-180' : ''
+              }`}
+              title="Swap Stations"
+            >
+              <ArrowRightLeft className="w-3.5 h-3.5" />
+            </button>
+
+            <div className="flex items-center gap-2">
+              <span className="w-8 h-8 rounded-xl bg-[#FFF2EB] text-[#FF5A1F] flex items-center justify-center font-bold text-xs">
+                {destCode}
+              </span>
+              <span className="text-sm font-bold text-[#1C1917]">{getStationShort(destCode)}</span>
+            </div>
+
+            <span className="text-[#D6CEC4] hidden sm:inline">•</span>
+
+            <span className="text-xs font-medium text-[#78716C] bg-[#FAF7F2] px-3 py-1 rounded-full border border-[#EFE8DE]">
+              {travelDate}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2 w-full md:w-auto justify-end">
+            <button
+              onClick={() => setIsExpanded(true)}
+              className="px-4 py-2 rounded-xl bg-[#FAF7F2] hover:bg-[#FFF2EB] text-[#1C1917] hover:text-[#FF5A1F] text-xs font-bold border border-[#EFE8DE] transition-all flex items-center gap-1.5"
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5 text-[#FF5A1F]" />
+              <span>Modify Route</span>
+            </button>
+
+            <button
+              onClick={onSearchStations}
+              className="px-5 py-2 rounded-xl bg-[#FF5A1F] hover:bg-[#E44810] text-white text-xs font-bold shadow-orange-glow transition-all flex items-center gap-1.5"
+            >
+              <Search className="w-3.5 h-3.5" />
+              <span>Refresh Trains</span>
+            </button>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // ==========================================
+  // CASE 2: INITIAL FOCUSED SOURCE TO DESTINATION CARD
+  // (Only this card is visible on screen before entering details)
+  // ==========================================
+  return (
+    <section
+      className={`px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto transition-all duration-500 ${
+        searched
+          ? 'pt-24 pb-6'
+          : 'min-h-[85vh] flex flex-col justify-center items-center pt-24 pb-12'
+      }`}
+    >
+      <div className="w-full max-w-2xl mx-auto">
         
-        {/* LEFT COLUMN: Search & Booking Card (Inspired by Image 2) */}
-        <div className="lg:col-span-7 bg-white rounded-3xl p-6 sm:p-8 shadow-soft border border-[#EFE8DE] relative">
+        {/* Welcoming Header */}
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#FFF2EB] text-[#FF5A1F] border border-[#FF5A1F]/20 mb-3">
+            <Radio className="w-3.5 h-3.5 animate-pulse text-[#FF5A1F]" />
+            Live Train Status & GPS Spotting
+          </div>
+
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#1C1917] tracking-tight">
+            Where do you want to go?
+          </h1>
+          <p className="text-sm sm:text-base text-[#78716C] mt-2 font-normal max-w-md mx-auto">
+            Enter your journey details to fetch live train running status, delay countdowns, and platform tracking.
+          </p>
+        </div>
+
+        {/* The Clean Source to Destination Card (Reference Image Center Inspiration) */}
+        <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-soft border border-[#EFE8DE] relative">
           
           {/* Segmented Mode Selector */}
-          <div className="flex items-center gap-2 p-1.5 bg-[#FAF7F2] rounded-2xl border border-[#EFE8DE] mb-6 overflow-x-auto">
+          <div className="flex items-center gap-1.5 p-1.5 bg-[#FAF7F2] rounded-2xl border border-[#EFE8DE] mb-6">
             <button
               onClick={() => setActiveTab('stations')}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all duration-200 ${
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 ${
                 activeTab === 'stations'
                   ? 'bg-white text-[#1C1917] shadow-xs border border-[#EFE8DE]'
                   : 'text-[#78716C] hover:text-[#1C1917]'
               }`}
             >
               <ArrowRightLeft className="w-4 h-4 text-[#FF5A1F]" />
-              Between Stations
+              <span>Between Stations</span>
             </button>
 
             <button
               onClick={() => setActiveTab('trainNumber')}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all duration-200 ${
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 ${
                 activeTab === 'trainNumber'
                   ? 'bg-white text-[#1C1917] shadow-xs border border-[#EFE8DE]'
                   : 'text-[#78716C] hover:text-[#1C1917]'
               }`}
             >
               <TrainIcon className="w-4 h-4 text-[#FF5A1F]" />
-              Train No. / Name
+              <span>Train No. / Name</span>
             </button>
 
             <button
               onClick={() => setActiveTab('stationRadar')}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all duration-200 ${
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 ${
                 activeTab === 'stationRadar'
                   ? 'bg-white text-[#1C1917] shadow-xs border border-[#EFE8DE]'
                   : 'text-[#78716C] hover:text-[#1C1917]'
               }`}
             >
               <Compass className="w-4 h-4 text-[#FF5A1F]" />
-              Station Board
+              <span>Station Board</span>
             </button>
           </div>
 
-          {/* TAB 1: BETWEEN STATIONS SEARCH */}
+          {/* TAB 1: BETWEEN STATIONS (Default & Main Focus) */}
           {activeTab === 'stations' && (
             <div className="space-y-4">
               <div className="relative">
+                
                 {/* FROM STATION INPUT */}
                 <div className="relative">
                   <label className="block text-[11px] font-bold uppercase tracking-wider text-[#78716C] mb-1.5">
@@ -190,7 +268,7 @@ export const SearchHero: React.FC<SearchHeroProps> = ({
                   </label>
                   <div
                     onClick={() => setSourceDropdownOpen(!sourceDropdownOpen)}
-                    className="flex items-center justify-between p-3.5 rounded-2xl bg-[#FAF7F2] border border-[#EFE8DE] hover:border-[#FF5A1F]/40 cursor-pointer transition-all"
+                    className="flex items-center justify-between p-3.5 rounded-2xl bg-[#FAF7F2] border border-[#EFE8DE] hover:border-[#FF5A1F]/50 cursor-pointer transition-all"
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center text-[#FF5A1F] shadow-xs">
@@ -251,7 +329,7 @@ export const SearchHero: React.FC<SearchHeroProps> = ({
                   <button
                     onClick={handleSwapStations}
                     title="Swap Origin and Destination"
-                    className={`w-11 h-11 rounded-full bg-[#FF5A1F] text-white flex items-center justify-center shadow-orange-glow hover:bg-[#E44810] active:scale-95 transition-all duration-300 ${
+                    className={`w-11 h-11 rounded-full bg-[#FF5A1F] text-white flex items-center justify-center shadow-orange-glow hover:bg-[#E44810] active:scale-95 transition-all duration-300 cursor-pointer ${
                       isSwapping ? 'rotate-180' : ''
                     }`}
                   >
@@ -266,7 +344,7 @@ export const SearchHero: React.FC<SearchHeroProps> = ({
                   </label>
                   <div
                     onClick={() => setDestDropdownOpen(!destDropdownOpen)}
-                    className="flex items-center justify-between p-3.5 rounded-2xl bg-[#FAF7F2] border border-[#EFE8DE] hover:border-[#FF5A1F]/40 cursor-pointer transition-all"
+                    className="flex items-center justify-between p-3.5 rounded-2xl bg-[#FAF7F2] border border-[#EFE8DE] hover:border-[#FF5A1F]/50 cursor-pointer transition-all"
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center text-[#FF5A1F] shadow-xs">
@@ -346,11 +424,14 @@ export const SearchHero: React.FC<SearchHeroProps> = ({
 
               {/* High-Converting Orange Search Button */}
               <button
-                onClick={onSearchStations}
+                onClick={() => {
+                  if (searched) setIsExpanded(false);
+                  onSearchStations();
+                }}
                 className="w-full mt-2 py-4 px-6 rounded-2xl bg-[#FF5A1F] hover:bg-[#E44810] text-white font-bold text-base flex items-center justify-center gap-2 shadow-orange-glow active:scale-[0.99] transition-all duration-200 cursor-pointer"
               >
                 <Search className="w-5 h-5" />
-                <span>Find Trains & Live Status</span>
+                <span>Search Trains & Live Status</span>
               </button>
             </div>
           )}
@@ -389,8 +470,9 @@ export const SearchHero: React.FC<SearchHeroProps> = ({
                           onSelectTrain(t);
                           setTrainQuery(`${t.trainNumber} - ${t.trainName}`);
                           setTrainDropdownOpen(false);
+                          if (searched) setIsExpanded(false);
                         }}
-                        className="w-full text-left p-3 rounded-xl hover:bg-[#FFF2EB] transition-colors flex items-center justify-between group"
+                        className="w-full text-left p-3 rounded-xl hover:bg-[#FFF2EB] transition-colors flex items-center justify-between group cursor-pointer"
                       >
                         <div className="flex items-center gap-3">
                           <span className="font-mono text-xs font-bold px-2 py-1 rounded-md bg-[#FF5A1F]/10 text-[#FF5A1F]">
@@ -424,8 +506,11 @@ export const SearchHero: React.FC<SearchHeroProps> = ({
                   {TRAINS.slice(0, 4).map((t) => (
                     <button
                       key={t.id}
-                      onClick={() => onSelectTrain(t)}
-                      className="p-3 rounded-xl bg-[#FAF7F2] border border-[#EFE8DE] hover:border-[#FF5A1F] text-left transition-all group flex items-center justify-between"
+                      onClick={() => {
+                        onSelectTrain(t);
+                        if (searched) setIsExpanded(false);
+                      }}
+                      className="p-3 rounded-xl bg-[#FAF7F2] border border-[#EFE8DE] hover:border-[#FF5A1F] text-left transition-all group flex items-center justify-between cursor-pointer"
                     >
                       <div>
                         <div className="text-xs font-bold text-[#1C1917] group-hover:text-[#FF5A1F]">
@@ -455,7 +540,7 @@ export const SearchHero: React.FC<SearchHeroProps> = ({
                     <button
                       key={st.code}
                       onClick={() => setSelectedStationRadar(st.code)}
-                      className={`p-3 rounded-xl border text-left transition-all ${
+                      className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
                         selectedStationRadar === st.code
                           ? 'bg-[#FF5A1F] text-white border-[#FF5A1F] shadow-orange-glow'
                           : 'bg-[#FAF7F2] border-[#EFE8DE] text-[#1C1917] hover:border-[#FF5A1F]/50'
@@ -468,24 +553,16 @@ export const SearchHero: React.FC<SearchHeroProps> = ({
                 </div>
               </div>
 
-              <div className="p-4 rounded-2xl bg-[#FFF2EB] border border-[#FF5A1F]/20 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Compass className="w-5 h-5 text-[#FF5A1F]" />
-                  <div>
-                    <div className="text-xs font-bold text-[#1C1917]">Live Terminal Radar</div>
-                    <div className="text-[11px] text-[#78716C]">Viewing arrivals & departures for {selectedStationRadar}</div>
-                  </div>
-                </div>
-                <button
-                  onClick={() => {
-                    const el = document.getElementById('stations');
-                    if (el) el.scrollIntoView({ behavior: 'smooth' });
-                  }}
-                  className="px-3.5 py-1.5 rounded-xl bg-[#FF5A1F] text-white text-xs font-bold hover:bg-[#E44810]"
-                >
-                  View Board
-                </button>
-              </div>
+              <button
+                onClick={() => {
+                  onSearchStations();
+                  if (searched) setIsExpanded(false);
+                }}
+                className="w-full py-3.5 rounded-2xl bg-[#FF5A1F] hover:bg-[#E44810] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-orange-glow transition-all cursor-pointer"
+              >
+                <Compass className="w-4 h-4" />
+                <span>View Terminal Departure Board</span>
+              </button>
             </div>
           )}
 
@@ -504,8 +581,9 @@ export const SearchHero: React.FC<SearchHeroProps> = ({
                     setDestCode(route.to);
                     setActiveTab('stations');
                     onSearchStations();
+                    if (searched) setIsExpanded(false);
                   }}
-                  className="px-3 py-1.5 rounded-full text-xs font-medium bg-[#FAF7F2] hover:bg-[#FFF2EB] text-[#57534E] hover:text-[#FF5A1F] border border-[#EFE8DE] transition-all duration-200"
+                  className="px-3 py-1.5 rounded-full text-xs font-medium bg-[#FAF7F2] hover:bg-[#FFF2EB] text-[#57534E] hover:text-[#FF5A1F] border border-[#EFE8DE] transition-all duration-200 cursor-pointer"
                 >
                   {route.label}
                 </button>
@@ -514,174 +592,16 @@ export const SearchHero: React.FC<SearchHeroProps> = ({
           </div>
         </div>
 
-        {/* RIGHT COLUMN: Signature Boarding Pass & Live Status Spotlight (Directly from User Images!) */}
-        <div className="lg:col-span-5 space-y-4">
-          <div className="bg-white rounded-3xl p-6 sm:p-7 shadow-soft border border-[#EFE8DE] relative overflow-hidden">
-            
-            {/* Top Header */}
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#78716C]">
-                Spotlight Live Tracker
-              </span>
-              <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-                Live Telemetry
-              </span>
-            </div>
-
-            {/* Wavy Route Altitude Line with Distance (Inspired by Image 3) */}
-            <div className="relative py-3 my-1">
-              <div className="flex justify-between items-center text-xs font-mono text-[#78716C] mb-1">
-                <span>Origin: {featuredTrain.sourceCode}</span>
-                <span className="font-bold text-[#FF5A1F] bg-[#FFF2EB] px-2 py-0.5 rounded-full">
-                  {featuredTrain.distanceKm} KM
-                </span>
-                <span>Dest: {featuredTrain.destinationCode}</span>
-              </div>
-
-              {/* Stylized SVG wavy path connecting Origin to Destination */}
-              <div className="relative h-14 w-full flex items-center justify-center">
-                <svg className="w-full h-12 overflow-visible" viewBox="0 0 300 40" fill="none">
-                  {/* Background dotted wave line */}
-                  <path
-                    d="M 10 20 Q 75 0, 150 20 T 290 20"
-                    stroke="#EFE8DE"
-                    strokeWidth="3"
-                    strokeDasharray="4 4"
-                    fill="none"
-                  />
-                  {/* Glowing active route line in orange */}
-                  <path
-                    d="M 10 20 Q 75 0, 150 20"
-                    stroke="#FF5A1F"
-                    strokeWidth="3.5"
-                    strokeLinecap="round"
-                    fill="none"
-                  />
-                  {/* Origin station dot */}
-                  <circle cx="10" cy="20" r="5" fill="#1C1917" />
-                  <circle cx="10" cy="20" r="2.5" fill="#FFFFFF" />
-                  {/* Active train location marker on wave */}
-                  <circle cx="150" cy="20" r="7" fill="#FF5A1F" className="animate-pulse" />
-                  <circle cx="150" cy="20" r="3.5" fill="#FFFFFF" />
-                  {/* Destination dot */}
-                  <circle cx="290" cy="20" r="5" fill="#FF5A1F" />
-                  <circle cx="290" cy="20" r="2.5" fill="#FFFFFF" />
-                </svg>
-
-                {/* Duration Badge floating on curve */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#FF5A1F] text-white text-[11px] font-extrabold px-3 py-1 rounded-full shadow-orange-glow flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
-                  {featuredTrain.duration}
-                </div>
-              </div>
-
-              {/* Station Codes and Departure/Arrival Times */}
-              <div className="flex justify-between items-end mt-1">
-                <div>
-                  <div className="text-2xl font-black font-sans tracking-tight text-[#1C1917]">
-                    {featuredTrain.sourceCode}
-                  </div>
-                  <div className="text-xs text-[#78716C]">Departure {featuredTrain.departureTime}</div>
-                </div>
-                <div className="text-right">
-                  <div className="text-2xl font-black font-sans tracking-tight text-[#1C1917]">
-                    {featuredTrain.destinationCode}
-                  </div>
-                  <div className="text-xs text-[#78716C]">Arrival {featuredTrain.arrivalTime}</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Signature Orange Train Card (Inspired by Image 3) */}
-            <div className="mt-4 rounded-2xl bg-gradient-to-r from-[#FF5A1F] to-[#FF7A00] p-5 text-white shadow-orange-glow relative overflow-hidden">
-              {/* Subtle background train tracks silhouette */}
-              <div className="absolute -right-6 -bottom-6 w-36 h-36 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-white/80 block">
-                    Fastest Service
-                  </span>
-                  <div className="text-lg font-black tracking-wide flex items-center gap-2">
-                    {featuredTrain.trainName}
-                  </div>
-                </div>
-                <span className="font-mono text-xs font-black bg-white/20 px-2.5 py-1 rounded-lg border border-white/25">
-                  {featuredTrain.trainNumber}
-                </span>
-              </div>
-
-              {/* Train Bullet Graphic & Delay Status */}
-              <div className="flex items-center justify-between pt-2 border-t border-white/20">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-                    <Navigation className="w-4 h-4 text-white" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold text-white">Approaching Kanpur</div>
-                    <div className="text-[11px] text-white/80">Speed: {featuredTrain.currentStatus.currentSpeedKmH} km/h • PF 3</div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <span className="text-[10px] font-bold bg-white text-[#FF5A1F] px-2.5 py-1 rounded-full uppercase">
-                    On Time
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Passenger & Ticket Notch Section */}
-            <div className="mt-4 pt-4 border-t border-[#EFE8DE] flex items-center justify-between text-xs">
-              <div>
-                <span className="text-[11px] text-[#78716C] block">Class & Coach</span>
-                <span className="font-bold text-[#1C1917]">Executive Class • Coach E1</span>
-              </div>
-              <div className="text-right">
-                <span className="text-[11px] text-[#78716C] block">Seat Status</span>
-                <span className="font-bold text-emerald-600">Confirmed (Seat 42A)</span>
-              </div>
-            </div>
-
-            {/* Barcode Strip (Inspired by Image 3) */}
-            <div className="mt-4 pt-3 border-t border-dashed border-[#EFE8DE] flex items-center justify-between">
-              <div className="font-mono text-[10px] tracking-widest text-[#78716C]">
-                |||| | ||||| || |||||| | |||| ||||
-              </div>
-              <span className="text-[10px] font-mono text-[#A8A29E]">IRCTC-AUTH-2026</span>
-            </div>
-
-            {/* Action CTA to Open Full Live Tracker */}
+        {searched && (
+          <div className="text-center mt-3">
             <button
-              onClick={() => onSelectTrain(featuredTrain)}
-              className="w-full mt-4 py-3 rounded-xl bg-[#1C1917] hover:bg-black text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer"
+              onClick={() => setIsExpanded(false)}
+              className="text-xs text-[#78716C] hover:text-[#1C1917] underline font-medium"
             >
-              <Compass className="w-4 h-4 text-[#FF5A1F]" />
-              <span>Open Live Station Tracker & Timeline</span>
+              Collapse search box ➔
             </button>
           </div>
-
-          {/* Mini Widgets Row (Weather, Speed, Kavach - Inspired by Image 1) */}
-          <div className="grid grid-cols-3 gap-3">
-            <div className="bg-white rounded-2xl p-3.5 border border-[#EFE8DE] shadow-xs text-center">
-              <CloudSun className="w-4 h-4 text-amber-500 mx-auto mb-1" />
-              <div className="text-[10px] font-semibold text-[#78716C]">Varanasi</div>
-              <div className="text-sm font-bold text-[#1C1917]">28°C ⛅</div>
-            </div>
-
-            <div className="bg-white rounded-2xl p-3.5 border border-[#EFE8DE] shadow-xs text-center">
-              <Navigation className="w-4 h-4 text-[#FF5A1F] mx-auto mb-1 animate-pulse" />
-              <div className="text-[10px] font-semibold text-[#78716C]">Top Speed</div>
-              <div className="text-sm font-bold text-[#1C1917]">132 km/h</div>
-            </div>
-
-            <div className="bg-white rounded-2xl p-3.5 border border-[#EFE8DE] shadow-xs text-center">
-              <ShieldCheck className="w-4 h-4 text-emerald-600 mx-auto mb-1" />
-              <div className="text-[10px] font-semibold text-[#78716C]">Kavach Grid</div>
-              <div className="text-sm font-bold text-emerald-600">Active</div>
-            </div>
-          </div>
-        </div>
+        )}
 
       </div>
     </section>

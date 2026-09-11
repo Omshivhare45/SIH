@@ -38,11 +38,46 @@ export interface CoachInfo {
   hasPantry?: boolean;
 }
 
+export type TrainDirection = 'UP' | 'DOWN';
+
+export interface PNRPassenger {
+  serial: number;
+  name: string;
+  age: number;
+  gender: 'M' | 'F';
+  bookingStatus: string;
+  currentStatus: string;
+  coach?: string;
+  berth?: string;
+  berthType?: string;
+}
+
+export interface PNRRecord {
+  pnr: string;
+  trainNumber: string;
+  trainName: string;
+  journeyDate: string;
+  boardingStation: string;
+  boardingCode: string;
+  destinationStation: string;
+  destinationCode: string;
+  classType: string;
+  quota: string;
+  bookingDate: string;
+  chartPrepared: boolean;
+  passengers: PNRPassenger[];
+  fare: number;
+  expectedPlatform: number | string;
+  prediction: string;
+}
+
 export interface Train {
   id: string;
   trainNumber: string;
   trainName: string;
   type: 'Vande Bharat' | 'Rajdhani' | 'Shatabdi' | 'Tejas' | 'Duronto' | 'Superfast' | 'Express';
+  direction: TrainDirection;
+  pairTrainNumber: string;
   sourceCode: string;
   sourceName: string;
   destinationCode: string;

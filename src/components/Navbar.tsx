@@ -61,11 +61,10 @@ export const Navbar: React.FC<NavbarProps> = ({ onSelectTab }) => {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled
-          ? 'bg-[#FAF7F2]/90 backdrop-blur-xl shadow-[0_4px_25px_rgba(28,25,23,0.06)] border-b border-[#EFE8DE]'
-          : 'bg-[#FAF7F2]/75 backdrop-blur-md border-b border-[#EFE8DE]/60'
-      }`}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled
+        ? 'bg-[#FAF7F2]/90 backdrop-blur-xl shadow-[0_4px_25px_rgba(28,25,23,0.06)] border-b border-[#EFE8DE]'
+        : 'bg-[#FAF7F2]/75 backdrop-blur-md border-b border-[#EFE8DE]/60'
+        }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
         {/* Brand Logo */}
@@ -85,13 +84,13 @@ export const Navbar: React.FC<NavbarProps> = ({ onSelectTab }) => {
           <div>
             <div className="flex items-center gap-1.5">
               <span className="text-xl font-extrabold tracking-tight text-[#1C1917] font-sans">
-                Track<span className="text-[#FF5A1F]">Rail</span>
+                <h1>Rail Buddy </h1>
               </span>
               <span className="text-[10px] font-bold uppercase tracking-wider bg-[#FF5A1F]/10 text-[#FF5A1F] px-1.5 py-0.5 rounded-md">
                 Live
               </span>
             </div>
-            <p className="text-[11px] text-[#78716C] -mt-0.5 font-medium hidden sm:block">Where is my train</p>
+            <p className="text-[11px] text-[#78716C] -mt-0.5 font-medium hidden sm: block">Where is my train</p>
           </div>
         </a>
 
@@ -101,11 +100,10 @@ export const Navbar: React.FC<NavbarProps> = ({ onSelectTab }) => {
             <a
               key={link.label}
               href={link.href}
-              className={`px-4 py-1.5 text-sm font-semibold rounded-full transition-all duration-200 ${
-                link.active
-                  ? 'bg-[#1C1917] text-white shadow-xs'
-                  : 'text-[#57534E] hover:text-[#1C1917] hover:bg-black/5'
-              }`}
+              className={`px-4 py-1.5 text-sm font-semibold rounded-full transition-all duration-200 ${link.active
+                ? 'bg-[#1C1917] text-white shadow-xs'
+                : 'text-[#57534E] hover:text-[#1C1917] hover:bg-black/5'
+                }`}
             >
               {link.label}
             </a>
@@ -132,11 +130,10 @@ export const Navbar: React.FC<NavbarProps> = ({ onSelectTab }) => {
           <button
             onClick={toggleSound}
             title={soundActive ? 'IR Audio Chimes Enabled' : 'Audio Muted'}
-            className={`p-2.5 rounded-xl border transition-all duration-200 ${
-              soundActive
-                ? 'bg-white border-[#EFE8DE] text-[#FF5A1F] shadow-xs hover:border-[#FF5A1F]/40'
-                : 'bg-white/50 border-[#EFE8DE] text-[#A8A29E]'
-            }`}
+            className={`p-2.5 rounded-xl border transition-all duration-200 ${soundActive
+              ? 'bg-white border-[#EFE8DE] text-[#FF5A1F] shadow-xs hover:border-[#FF5A1F]/40'
+              : 'bg-white/50 border-[#EFE8DE] text-[#A8A29E]'
+              }`}
           >
             {soundActive ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
           </button>

@@ -1,4 +1,4 @@
-import { Station, Train } from '../types/train';
+import { PNRRecord, RouteStation, Station, Train } from '../types/train';
 
 export const STATIONS: Station[] = [
   { code: 'NDLS', name: 'New Delhi', city: 'New Delhi', state: 'Delhi' },
@@ -34,6 +34,10 @@ export const STATIONS: Station[] = [
   { code: 'BRC', name: 'Vadodara Junction', city: 'Vadodara', state: 'Gujarat' },
   { code: 'RTM', name: 'Ratlam Junction', city: 'Ratlam', state: 'Madhya Pradesh' },
   { code: 'KOTA', name: 'Kota Junction', city: 'Kota', state: 'Rajasthan' },
+  { code: 'RKMP', name: 'Rani Kamalapati', city: 'Bhopal', state: 'Madhya Pradesh' },
+  { code: 'PPI', name: 'Pipariya', city: 'Pipariya', state: 'Madhya Pradesh' },
+  { code: 'GAR', name: 'Gadarwara', city: 'Gadarwara', state: 'Madhya Pradesh' },
+  { code: 'COR', name: 'Chittaurgarh', city: 'Chittorgarh', state: 'Rajasthan' },
 ];
 
 export const POPULAR_ROUTES = [
@@ -45,7 +49,7 @@ export const POPULAR_ROUTES = [
   { from: 'MMCT', to: 'ADI', label: 'Mumbai ➔ Ahmedabad (Tejas Express)' },
 ];
 
-export const TRAINS: Train[] = [
+const BASE_TRAINS: Omit<Train, 'direction' | 'pairTrainNumber'>[] = [
   {
     id: 't-22436',
     trainNumber: '22436',
@@ -832,4 +836,581 @@ export const TRAINS: Train[] = [
       },
     ],
   },
+  {
+    id: 't-12062',
+    trainNumber: '12062',
+    trainName: 'Rani Kamalapati Jan Shatabdi',
+    type: 'Shatabdi',
+    sourceCode: 'PPI',
+    sourceName: 'Pipariya',
+    destinationCode: 'RKMP',
+    destinationName: 'Rani Kamalapati',
+    departureTime: '05:40 AM',
+    arrivalTime: '08:20 AM',
+    duration: '2h 40m',
+    distanceKm: 146,
+    runsOnDays: ['M', 'T', 'W', 'T', 'F', 'S', 'S'],
+    currentStatus: {
+      statusText: 'Departed Gadarwara • On Time',
+      delayMinutes: 0,
+      currentStationCode: 'GAR',
+      currentStationName: 'Gadarwara',
+      nextStationCode: 'RKMP',
+      nextStationName: 'Rani Kamalapati',
+      distanceCoveredKm: 62,
+      currentSpeedKmH: 96,
+      platform: 2,
+      lastUpdated: 'Live GPS',
+      etaNextStation: '08:20 AM',
+      distanceToNextKm: 84,
+      signalStatus: 'GREEN',
+      locoNumber: 'WAP-7 / 30512',
+      pantryAvailable: false,
+    },
+    classes: [
+      { type: 'CC', name: 'AC Chair Car', price: 410, status: 'AVAILABLE 28', statusType: 'available' },
+      { type: '2S', name: 'Second Sitting', price: 115, status: 'AVAILABLE 90', statusType: 'available' },
+    ],
+    coaches: [
+      { code: 'LOCO', type: 'ENG', name: 'WAP-7', seatsCount: 0 },
+      { code: 'C1', type: 'CC', name: 'Chair Car', seatsCount: 78 },
+      { code: 'D1', type: '2S', name: 'Second Sitting', seatsCount: 108 },
+      { code: 'D2', type: '2S', name: 'Second Sitting', seatsCount: 108 },
+      { code: 'SLR', type: 'GEN', name: 'Luggage', seatsCount: 20 },
+    ],
+    route: [
+      {
+        stationCode: 'PPI',
+        stationName: 'Pipariya',
+        platform: 1,
+        scheduledArrival: 'Source',
+        scheduledDeparture: '05:40 AM',
+        actualArrival: '05:32 AM',
+        actualDeparture: '05:40 AM',
+        distanceKm: 0,
+        day: 1,
+        haltMinutes: 0,
+        status: 'passed',
+        delayMinutes: 0,
+        speedKmH: 0,
+      },
+      {
+        stationCode: 'GAR',
+        stationName: 'Gadarwara',
+        platform: 2,
+        scheduledArrival: '06:18 AM',
+        scheduledDeparture: '06:20 AM',
+        actualArrival: '06:18 AM',
+        actualDeparture: '06:20 AM',
+        distanceKm: 62,
+        day: 1,
+        haltMinutes: 2,
+        status: 'current',
+        delayMinutes: 0,
+        speedKmH: 96,
+      },
+      {
+        stationCode: 'BPL',
+        stationName: 'Bhopal Junction',
+        platform: 4,
+        scheduledArrival: '07:55 AM',
+        scheduledDeparture: '08:00 AM',
+        actualArrival: 'Expected 07:55 AM',
+        actualDeparture: 'Expected 08:00 AM',
+        distanceKm: 132,
+        day: 1,
+        haltMinutes: 5,
+        status: 'upcoming',
+        delayMinutes: 0,
+        speedKmH: 90,
+      },
+      {
+        stationCode: 'RKMP',
+        stationName: 'Rani Kamalapati',
+        platform: 1,
+        scheduledArrival: '08:20 AM',
+        scheduledDeparture: 'Destination',
+        actualArrival: 'Expected 08:20 AM',
+        actualDeparture: 'Destination',
+        distanceKm: 146,
+        day: 1,
+        haltMinutes: 0,
+        status: 'upcoming',
+        delayMinutes: 0,
+        speedKmH: 0,
+      },
+    ],
+  },
 ];
+
+const PAIR_META: Record<
+  string,
+  { pair: string; direction: TrainDirection; returnDep: string; returnArr: string }
+> = {
+  '22436': { pair: '22435', direction: 'DOWN', returnDep: '03:00 PM', returnArr: '11:00 PM' },
+  '12952': { pair: '12951', direction: 'DOWN', returnDep: '05:00 PM', returnArr: '08:35 AM' },
+  '12004': { pair: '12003', direction: 'DOWN', returnDep: '03:35 PM', returnArr: '10:05 PM' },
+  '12302': { pair: '12301', direction: 'DOWN', returnDep: '04:50 PM', returnArr: '10:00 AM' },
+  '20608': { pair: '20607', direction: 'UP', returnDep: '05:50 AM', returnArr: '12:20 PM' },
+  '12626': { pair: '12625', direction: 'DOWN', returnDep: '11:05 AM', returnArr: '01:30 PM' },
+  '12260': { pair: '12259', direction: 'DOWN', returnDep: '06:20 PM', returnArr: '11:30 AM' },
+  '12062': { pair: '12061', direction: 'UP', returnDep: '05:00 PM', returnArr: '07:45 PM' },
+};
+
+function reverseRoute(route: RouteStation[]): RouteStation[] {
+  const maxKm = route[route.length - 1]?.distanceKm ?? 0;
+  return [...route].reverse().map((stop, idx, arr) => {
+    const isFirst = idx === 0;
+    const isLast = idx === arr.length - 1;
+    let status: RouteStation['status'] = 'upcoming';
+    if (isFirst) status = 'passed';
+    else if (idx === 1) status = 'current';
+    return {
+      ...stop,
+      distanceKm: Math.max(0, maxKm - stop.distanceKm),
+      scheduledArrival: isFirst
+        ? 'Source'
+        : stop.scheduledDeparture === 'Destination'
+          ? stop.scheduledArrival
+          : stop.scheduledDeparture,
+      scheduledDeparture: isLast
+        ? 'Destination'
+        : stop.scheduledArrival === 'Source'
+          ? stop.scheduledDeparture
+          : stop.scheduledArrival,
+      actualArrival: isFirst ? stop.actualDeparture : stop.actualArrival,
+      actualDeparture: isLast ? 'Destination' : stop.actualDeparture,
+      haltMinutes: isFirst || isLast ? 0 : stop.haltMinutes,
+      status,
+    };
+  });
+}
+
+function makeReturn(
+  train: Omit<Train, 'direction' | 'pairTrainNumber'>,
+  pairNumber: string,
+  dep: string,
+  arr: string,
+  dir: TrainDirection
+): Train {
+  const route = reverseRoute(train.route);
+  const current = route.find((r) => r.status === 'current') || route[0];
+  const currentIdx = route.findIndex((r) => r.stationCode === current.stationCode);
+  const next = route[currentIdx + 1] || route[route.length - 1];
+  return {
+    ...train,
+    id: `t-${pairNumber}`,
+    trainNumber: pairNumber,
+    direction: dir,
+    pairTrainNumber: train.trainNumber,
+    sourceCode: train.destinationCode,
+    sourceName: train.destinationName,
+    destinationCode: train.sourceCode,
+    destinationName: train.sourceName,
+    departureTime: dep,
+    arrivalTime: arr,
+    currentStatus: {
+      ...train.currentStatus,
+      statusText: `En route toward ${train.sourceName}`,
+      currentStationCode: current.stationCode,
+      currentStationName: current.stationName,
+      nextStationCode: next.stationCode,
+      nextStationName: next.stationName,
+      platform: current.platform,
+    },
+    route,
+  };
+}
+
+const outbound: Train[] = BASE_TRAINS.map((t) => {
+  const meta = PAIR_META[t.trainNumber];
+  return {
+    ...t,
+    direction: meta?.direction ?? 'DOWN',
+    pairTrainNumber: meta?.pair ?? t.trainNumber,
+  };
+});
+
+const inbound: Train[] = BASE_TRAINS.flatMap((t) => {
+  const meta = PAIR_META[t.trainNumber];
+  if (!meta) return [];
+  return [
+    makeReturn(
+      t,
+      meta.pair,
+      meta.returnDep,
+      meta.returnArr,
+      meta.direction === 'DOWN' ? 'UP' : 'DOWN'
+    ),
+  ];
+});
+
+export const TRAINS: Train[] = [...outbound, ...inbound];
+
+export function findTrainsByQuery(query: string): Train[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return TRAINS.slice(0, 8);
+  return TRAINS.filter(
+    (t) =>
+      t.trainNumber.includes(q.replace(/\s/g, '')) ||
+      t.trainName.toLowerCase().includes(q) ||
+      t.sourceCode.toLowerCase().includes(q) ||
+      t.destinationCode.toLowerCase().includes(q) ||
+      t.sourceName.toLowerCase().includes(q) ||
+      t.destinationName.toLowerCase().includes(q)
+  );
+}
+
+export function getPairedTrain(train: Train): Train | undefined {
+  return TRAINS.find((t) => t.trainNumber === train.pairTrainNumber && t.id !== train.id);
+}
+
+export function getDirectionPair(train: Train): { down: Train; up: Train } {
+  const pair = getPairedTrain(train);
+  const down = train.direction === 'DOWN' ? train : pair || train;
+  const up = train.direction === 'UP' ? train : pair || train;
+  return { down, up };
+}
+
+export const DEFAULT_SEARCH_HISTORY = [
+  { trainNumber: '12062', trainName: 'Rani Kamalapati Jan Shatabdi', fromCode: 'PPI', toCode: 'RKMP' },
+  { trainNumber: '12061', trainName: 'Madan Mahal Jan Shatabdi', fromCode: 'RKMP', toCode: 'PPI' },
+  { trainNumber: '22436', trainName: 'Vande Bharat Express', fromCode: 'NDLS', toCode: 'BSB' },
+  { trainNumber: '12952', trainName: 'Mumbai Tejas Rajdhani', fromCode: 'NDLS', toCode: 'MMCT' },
+  { trainNumber: '12302', trainName: 'Howrah Rajdhani Express', fromCode: 'NDLS', toCode: 'HWH' },
+];
+
+export const PNR_RECORDS: PNRRecord[] = [
+  {
+    pnr: '2415893201',
+    trainNumber: '22436',
+    trainName: 'Vande Bharat Express',
+    journeyDate: 'Today, 06:00 AM',
+    boardingStation: 'New Delhi',
+    boardingCode: 'NDLS',
+    destinationStation: 'Varanasi Junction',
+    destinationCode: 'BSB',
+    classType: 'EC',
+    quota: 'GN',
+    bookingDate: '02 Sep 2026',
+    chartPrepared: true,
+    fare: 3300,
+    expectedPlatform: 16,
+    prediction: '100% Confirmed',
+    passengers: [
+      {
+        serial: 1,
+        name: 'R. Sharma',
+        age: 34,
+        gender: 'M',
+        bookingStatus: 'CNF/E1/42',
+        currentStatus: 'CNF',
+        coach: 'E1',
+        berth: '42',
+        berthType: 'Window',
+      },
+      {
+        serial: 2,
+        name: 'A. Sharma',
+        age: 31,
+        gender: 'F',
+        bookingStatus: 'CNF/E1/43',
+        currentStatus: 'CNF',
+        coach: 'E1',
+        berth: '43',
+        berthType: 'Aisle',
+      },
+    ],
+  },
+  {
+    pnr: '8622145093',
+    trainNumber: '12952',
+    trainName: 'Mumbai Tejas Rajdhani Express',
+    journeyDate: 'Tomorrow, 04:55 PM',
+    boardingStation: 'New Delhi',
+    boardingCode: 'NDLS',
+    destinationStation: 'Mumbai Central',
+    destinationCode: 'MMCT',
+    classType: '3A',
+    quota: 'GN',
+    bookingDate: '04 Sep 2026',
+    chartPrepared: false,
+    fare: 2320,
+    expectedPlatform: 3,
+    prediction: '92% chance of confirm',
+    passengers: [
+      {
+        serial: 1,
+        name: 'K. Patel',
+        age: 42,
+        gender: 'M',
+        bookingStatus: 'RAC 4',
+        currentStatus: 'RAC 2',
+        coach: 'B1',
+        berth: '21',
+        berthType: 'Side Lower',
+      },
+    ],
+  },
+  {
+    pnr: '4510038876',
+    trainNumber: '12626',
+    trainName: 'Kerala Superfast Express',
+    journeyDate: '12 Sep, 08:10 PM',
+    boardingStation: 'New Delhi',
+    boardingCode: 'NDLS',
+    destinationStation: 'Thiruvananthapuram Central',
+    destinationCode: 'TVC',
+    classType: 'SL',
+    quota: 'GN',
+    bookingDate: '01 Sep 2026',
+    chartPrepared: false,
+    fare: 920,
+    expectedPlatform: 4,
+    prediction: '61% chance of confirm',
+    passengers: [
+      {
+        serial: 1,
+        name: 'M. Nair',
+        age: 28,
+        gender: 'M',
+        bookingStatus: 'WL 54',
+        currentStatus: 'WL 18',
+      },
+      {
+        serial: 2,
+        name: 'S. Nair',
+        age: 26,
+        gender: 'F',
+        bookingStatus: 'WL 55',
+        currentStatus: 'WL 19',
+      },
+    ],
+  },
+];
+
+export function lookupPNR(pnr: string): PNRRecord | null {
+  const cleaned = pnr.replace(/\D/g, '');
+  return PNR_RECORDS.find((r) => r.pnr === cleaned) || null;
+}
+
+const PAIR_CONFIG: Record<
+  string,
+  { pair: string; dep: string; arr: string; duration: string }
+> = {
+  '22436': { pair: '22435', dep: '03:15 PM', arr: '11:20 PM', duration: '8h 05m' },
+  '12952': { pair: '12951', dep: '04:35 PM', arr: '08:30 AM', duration: '15h 55m' },
+  '12004': { pair: '12003', dep: '03:20 PM', arr: '10:00 PM', duration: '6h 40m' },
+  '12302': { pair: '12301', dep: '04:55 PM', arr: '10:00 AM', duration: '17h 05m' },
+  '20608': { pair: '20607', dep: '05:50 AM', arr: '12:20 PM', duration: '6h 30m' },
+  '12626': { pair: '12625', dep: '11:15 AM', arr: '01:00 AM', duration: '45h 45m' },
+  '12260': { pair: '12259', dep: '06:20 PM', arr: '11:30 AM', duration: '17h 10m' },
+};
+
+function makeReturnTrain(
+  down: Train,
+  pair: string,
+  dep: string,
+  arr: string,
+  duration: string
+): Train {
+  const reversed = [...down.route].reverse();
+  const route: RouteStation[] = reversed.map((stop, idx) => {
+    const isFirst = idx === 0;
+    const isLast = idx === reversed.length - 1;
+    const distanceKm = Math.max(0, down.distanceKm - stop.distanceKm);
+    return {
+      ...stop,
+      distanceKm,
+      scheduledArrival: isFirst ? 'Source' : stop.scheduledDeparture,
+      scheduledDeparture: isLast ? 'Destination' : stop.scheduledArrival,
+      actualArrival: isFirst ? stop.actualDeparture : stop.actualDeparture,
+      actualDeparture: isLast ? 'Destination' : stop.actualArrival,
+      haltMinutes: isFirst || isLast ? 0 : stop.haltMinutes,
+      status: idx === 0 ? 'passed' : idx === 1 ? 'current' : 'upcoming',
+      day: isLast ? stop.day : 1,
+    };
+  });
+
+  const current = route[1] || route[0];
+  const next = route[2] || route[route.length - 1];
+
+  return {
+    ...down,
+    id: `t-${pair}`,
+    trainNumber: pair,
+    direction: 'UP',
+    pairTrainNumber: down.trainNumber,
+    sourceCode: down.destinationCode,
+    sourceName: down.destinationName,
+    destinationCode: down.sourceCode,
+    destinationName: down.sourceName,
+    departureTime: dep,
+    arrivalTime: arr,
+    duration,
+    currentStatus: {
+      ...down.currentStatus,
+      statusText: `Departed ${current.stationName} • Return service`,
+      currentStationCode: current.stationCode,
+      currentStationName: current.stationName,
+      nextStationCode: next.stationCode,
+      nextStationName: next.stationName,
+      distanceCoveredKm: current.distanceKm,
+      platform: current.platform,
+      etaNextStation: next.scheduledArrival,
+      distanceToNextKm: Math.max(0, next.distanceKm - current.distanceKm),
+    },
+    route,
+  };
+}
+
+export const TRAINS: Train[] = BASE_TRAINS.flatMap((raw) => {
+  const cfg = PAIR_CONFIG[raw.trainNumber];
+  const down: Train = {
+    ...raw,
+    direction: 'DOWN',
+    pairTrainNumber: cfg?.pair || raw.trainNumber,
+  };
+  if (!cfg) return [down];
+  return [down, makeReturnTrain(down, cfg.pair, cfg.dep, cfg.arr, cfg.duration)];
+});
+
+export function findTrainsByQuery(query: string): Train[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return TRAINS.slice(0, 8);
+  return TRAINS.filter(
+    (t) =>
+      t.trainNumber.includes(q) ||
+      t.trainName.toLowerCase().includes(q) ||
+      t.sourceName.toLowerCase().includes(q) ||
+      t.destinationName.toLowerCase().includes(q) ||
+      t.sourceCode.toLowerCase().includes(q) ||
+      t.destinationCode.toLowerCase().includes(q) ||
+      `${t.trainNumber} ${t.trainName}`.toLowerCase().includes(q)
+  );
+}
+
+export function getPairedTrain(train: Train): Train | undefined {
+  return TRAINS.find((t) => t.trainNumber === train.pairTrainNumber && t.id !== train.id);
+}
+
+export function getDirectionPair(train: Train): { down: Train; up: Train } {
+  const pair = getPairedTrain(train);
+  const down = train.direction === 'DOWN' ? train : pair || train;
+  const up = train.direction === 'UP' ? train : pair || train;
+  return { down, up };
+}
+
+export const PNR_RECORDS: PNRRecord[] = [
+  {
+    pnr: '2415893201',
+    trainNumber: '22436',
+    trainName: 'Vande Bharat Express',
+    journeyDate: 'Today, 11 Sep 2026',
+    boardingStation: 'New Delhi',
+    boardingCode: 'NDLS',
+    destinationStation: 'Varanasi Junction',
+    destinationCode: 'BSB',
+    classType: 'EC',
+    quota: 'GN',
+    bookingDate: '02 Sep 2026',
+    chartPrepared: true,
+    expectedPlatform: 16,
+    fare: 3300,
+    prediction: '100% Confirmed',
+    passengers: [
+      {
+        serial: 1,
+        name: 'RITIK SHARMA',
+        age: 24,
+        gender: 'M',
+        bookingStatus: 'CNF/E1/42/WS',
+        currentStatus: 'CNF',
+        coach: 'E1',
+        berth: '42',
+        berthType: 'Window',
+      },
+      {
+        serial: 2,
+        name: 'ANANYA SHARMA',
+        age: 22,
+        gender: 'F',
+        bookingStatus: 'CNF/E1/43/WS',
+        currentStatus: 'CNF',
+        coach: 'E1',
+        berth: '43',
+        berthType: 'Aisle',
+      },
+    ],
+  },
+  {
+    pnr: '4521896730',
+    trainNumber: '12952',
+    trainName: 'Mumbai Tejas Rajdhani Express',
+    journeyDate: 'Tomorrow, 12 Sep 2026',
+    boardingStation: 'New Delhi',
+    boardingCode: 'NDLS',
+    destinationStation: 'Mumbai Central',
+    destinationCode: 'MMCT',
+    classType: '2A',
+    quota: 'GN',
+    bookingDate: '28 Aug 2026',
+    chartPrepared: false,
+    expectedPlatform: 3,
+    fare: 3150,
+    prediction: '95% chance of confirm',
+    passengers: [
+      {
+        serial: 1,
+        name: 'AMIT VERMA',
+        age: 34,
+        gender: 'M',
+        bookingStatus: 'RAC 4',
+        currentStatus: 'RAC',
+        coach: 'A1',
+        berth: '21',
+        berthType: 'Side Lower',
+      },
+    ],
+  },
+  {
+    pnr: '8890123456',
+    trainNumber: '12626',
+    trainName: 'Kerala Superfast Express',
+    journeyDate: '14 Sep 2026',
+    boardingStation: 'New Delhi',
+    boardingCode: 'NDLS',
+    destinationStation: 'Thiruvananthapuram Central',
+    destinationCode: 'TVC',
+    classType: 'SL',
+    quota: 'GN',
+    bookingDate: '20 Aug 2026',
+    chartPrepared: false,
+    expectedPlatform: 4,
+    fare: 920,
+    prediction: '62% chance of confirm',
+    passengers: [
+      {
+        serial: 1,
+        name: 'SURESH NAIR',
+        age: 41,
+        gender: 'M',
+        bookingStatus: 'WL 18',
+        currentStatus: 'WL',
+      },
+      {
+        serial: 2,
+        name: 'MEERA NAIR',
+        age: 38,
+        gender: 'F',
+        bookingStatus: 'WL 19',
+        currentStatus: 'WL',
+      },
+    ],
+  },
+];
+
+export function lookupPNR(pnr: string): PNRRecord | undefined {
+  const cleaned = pnr.replace(/\s/g, '');
+  return PNR_RECORDS.find((r) => r.pnr === cleaned);
+}
