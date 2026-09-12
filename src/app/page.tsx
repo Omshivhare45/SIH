@@ -147,13 +147,13 @@ export default function Home() {
                       </h3>
                     </div>
                     <p className="text-xs text-[#78716C] mt-1 font-medium">
-                      {displayTrains.length} Services Found • Click "Track Live Status" to view real-time GPS & station timeline below
+                      {displayTrains.length} Services Found • Click "Track Live Status" to view real-time NTES status & station timeline below
                     </p>
                   </div>
 
                   <div className="flex items-center gap-2 text-xs text-[#1C1917] font-mono bg-white px-3.5 py-1.5 rounded-2xl border border-[#EFE8DE] shadow-xs">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span>99.4% Network Telemetry Live</span>
+                    <span>Live source: NTES / IRCTC</span>
                   </div>
                 </div>
 
@@ -176,7 +176,7 @@ export default function Home() {
                   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between mb-2">
                     <span className="text-xs font-mono font-bold text-[#FF5A1F] flex items-center gap-1.5">
                       <Navigation className="w-3.5 h-3.5 animate-pulse text-[#FF5A1F]" />
-                      LIVE GPS TELEMETRY & STATION COUNTDOWN
+                      REAL-TIME NTES STATUS & STATION TIMELINE
                     </span>
                     <span className="text-xs font-medium text-[#78716C]">
                       Currently Tracking: <strong className="text-[#1C1917]">{selectedLiveTrain.trainNumber} - {selectedLiveTrain.trainName}</strong>
@@ -206,7 +206,7 @@ export default function Home() {
                       <TrendingUp className="w-6 h-6" />
                     </div>
                     <div>
-                      <span className="text-[11px] font-mono font-bold text-[#78716C] uppercase">Average Punctuality</span>
+                      <span className="text-[11px] font-mono font-bold text-[#78716C] uppercase">Average Punctuality (demo)</span>
                       <div className="text-xl font-black text-[#1C1917] font-mono mt-0.5">
                         98.2% <span className="text-emerald-600 text-xs font-sans font-bold">On Time</span>
                       </div>
@@ -218,9 +218,9 @@ export default function Home() {
                       <Radio className="w-6 h-6 animate-pulse" />
                     </div>
                     <div>
-                      <span className="text-[11px] font-mono font-bold text-[#78716C] uppercase">ISRO NavIC Telemetry</span>
-                      <div className="text-xl font-black text-[#1C1917] font-mono mt-0.5">
-                        24/24 Sats <span className="text-emerald-600 text-xs font-sans font-bold">Locked</span>
+                      <span className="text-[11px] font-mono font-bold text-[#78716C] uppercase">ISRO NavIC Telemetry (demo)</span>
+                      <div className="text-lg font-black text-[#1C1917] font-mono mt-0.5">
+                        Demo <span className="text-amber-600 text-xs font-sans font-bold">no live GPS feed</span>
                       </div>
                     </div>
                   </div>
@@ -230,9 +230,9 @@ export default function Home() {
                       <ShieldCheck className="w-6 h-6 text-emerald-600" />
                     </div>
                     <div>
-                      <span className="text-[11px] font-mono font-bold text-[#78716C] uppercase">Kavach Safety Grid</span>
+                      <span className="text-[11px] font-mono font-bold text-[#78716C] uppercase">Kavach Safety Grid (demo)</span>
                       <div className="text-xl font-black text-[#1C1917] font-mono mt-0.5">
-                        100% Active
+                        Demo
                       </div>
                     </div>
                   </div>

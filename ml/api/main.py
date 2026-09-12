@@ -8,6 +8,7 @@ Endpoints:
     GET  /health                 service + model availability
     POST /api/predict            {"train_number","station_code",...} -> delay/ETA/confidence
     GET  /api/models             trained model comparison from model_meta.json
+    GET  /api/live/train/{no}    real-time NTES feed (debug: raw search/info/schedule/status)
 """
 
 from __future__ import annotations
@@ -106,6 +107,23 @@ def model_info():
         "ensemble_weights": meta["ensemble"]["weights"],
         "features": meta["features"],
     }
+
+
+@app.get("/api/live/train/{train_number}")
+def live_train(train_number: str, journey_date: Optional[str] = None):
+    """
+    Real-time NTES feed for a train (debug payload).
+
+    Returns the raw NTES responses from search / train_info / schedule /
+    live_status labelled with data_source="ntes". No normalization or ML
+    integration yet.
+    """
+    from ml.api.live import fetch_debug_payload
+
+    payload = fetch_debug_payload(str(train_number), journey_date)
+    if not payload.get("success"):
+        raise HTTPException(502, payload.get("error") or "NTES live feed unavailable")
+    return payload
 
 
 @app.post("/api/predict", response_model=PredictionResponse)

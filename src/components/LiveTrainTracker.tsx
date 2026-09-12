@@ -23,14 +23,16 @@ import {
   RefreshCw,
   Eye,
   EyeOff,
+  Flag,
   CloudSun,
   Cpu,
   Flame,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { Train, RouteStation } from '../types/train';
+import { Train } from '../types/train';
 import { railAudio } from '../utils/audio';
-import { predictDelay, PredictionResponse } from '../lib/api';
+import { fetchLiveTrain, predictDelay, PredictionResponse } from '../lib/api';
+import { buildLiveTimeline, LiveStopView, LiveTimeline } from '../lib/liveTimeline';
 
 interface LiveTrainTrackerProps {
   train: Train;
@@ -46,13 +48,42 @@ export const LiveTrainTracker: React.FC<LiveTrainTrackerProps> = ({ train, onOpe
   const [showIntermediate, setShowIntermediate] = useState<boolean>(false);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
+  // REAL NTES live data (GET /api/live/train/{train_number})
+  const [live, setLive] = useState<LiveTimeline | null>(null);
+  const [liveError, setLiveError] = useState<string | null>(null);
+  const [liveLoading, setLiveLoading] = useState<boolean>(true);
+  const [liveRefresh, setLiveRefresh] = useState<number>(0);
+
   // AI delay & ETA prediction state
   const [prediction, setPrediction] = useState<PredictionResponse | null>(null);
   const [predictionLoading, setPredictionLoading] = useState<boolean>(false);
   const [predictionError, setPredictionError] = useState<string | null>(null);
   const [forecastAttempt, setForecastAttempt] = useState<number>(0);
 
-  // Realistic live speed fluctuation
+  // Demote the mock route to an explicit DEMO/SIMULATED timeline used ONLY
+  // when the NTES live feed is unavailable.
+  const mockStops = React.useMemo<LiveStopView[]>(() => {
+    return train.route.map((rs) => ({
+      stationCode: rs.stationCode,
+      stationName: rs.stationName,
+      platform: String(rs.platform),
+      scheduledArrival: rs.scheduledArrival,
+      scheduledDeparture: rs.scheduledDeparture,
+      actualArrival: rs.actualArrival,
+      actualDeparture: rs.actualDeparture,
+      distanceKm: rs.distanceKm,
+      haltMinutes: rs.haltMinutes,
+      status: rs.status === 'approaching' ? 'upcoming' : rs.status,
+      delayMinutes: rs.delayMinutes,
+      arrived: rs.status === 'passed',
+      departed: rs.status === 'passed' || rs.status === 'current',
+    }));
+  }, [train.route]);
+
+  const liveActive = live !== null && liveError === null;
+  const displayStops: LiveStopView[] = liveActive ? live.stops : mockStops;
+
+  // Realistic live speed fluctuation — DEMO ONLY. Never shown as real data.
   useEffect(() => {
     const interval = setInterval(() => {
       const delta = (Math.random() - 0.5) * 3;
@@ -64,11 +95,39 @@ export const LiveTrainTracker: React.FC<LiveTrainTrackerProps> = ({ train, onOpe
     return () => clearInterval(interval);
   }, []);
 
-  // AI delay & ETA forecast — calls the RailBuddy ML backend whenever the active station changes
+  // Fetch REAL NTES live data from the RailBuddy backend.
   useEffect(() => {
     const controller = new AbortController();
-    const station = train.route[activeStationIdx] || train.route[0];
-    const next = train.route[activeStationIdx + 1];
+    setLiveLoading(true);
+    fetchLiveTrain(train.trainNumber, controller.signal)
+      .then((payload) => {
+        if (controller.signal.aborted) return;
+        const timeline = buildLiveTimeline(payload);
+        if (timeline) {
+          setLive(timeline);
+          setLiveError(null);
+        } else {
+          setLive(null);
+          setLiveError('Live payload missing schedule/live_status');
+        }
+      })
+      .catch((err: unknown) => {
+        if ((err as Error).name === 'AbortError') return;
+        setLive(null);
+        setLiveError((err as Error).message || 'Live railway data temporarily unavailable');
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLiveLoading(false);
+      });
+    return () => controller.abort();
+  }, [train.trainNumber, liveRefresh]);
+
+  // AI delay & ETA forecast — calls the RailBuddy ML backend based on the
+  // current (live if available, otherwise demo) station.
+  useEffect(() => {
+    const controller = new AbortController();
+    const station = displayStops.find((s) => s.status !== 'passed') ?? displayStops[0];
+    const next = station ? displayStops[displayStops.indexOf(station) + 1] : undefined;
 
     const runForecast = async () => {
       setPredictionLoading(true);
@@ -78,9 +137,10 @@ export const LiveTrainTracker: React.FC<LiveTrainTrackerProps> = ({ train, onOpe
           {
             train_number: train.trainNumber,
             station_code: station.stationCode,
-            delay_current_minutes: station.delayMinutes ?? train.currentStatus.delayMinutes ?? 0,
-            current_speed_kmh: currentSpeed,
-            distance_covered_km: station.distanceKm || train.currentStatus.distanceCoveredKm || undefined,
+            delay_current_minutes: liveActive ? live.delayMinutes : (station?.delayMinutes ?? 0),
+            // NTES provides no GPS speed; this only feeds the ML input features.
+            current_speed_kmh: liveActive ? 90 : currentSpeed,
+            distance_covered_km: station?.distanceKm || undefined,
             target: next?.stationCode,
           },
           controller.signal,
@@ -98,10 +158,18 @@ export const LiveTrainTracker: React.FC<LiveTrainTrackerProps> = ({ train, onOpe
     runForecast();
     return () => controller.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [train.trainNumber, train.currentStatus.delayMinutes, activeStationIdx, forecastAttempt]);
+  }, [train.trainNumber, live, liveError, activeStationIdx, forecastAttempt]);
 
-  const currentStation = train.route[activeStationIdx] || train.route[0];
-  const nextStation = train.route[activeStationIdx + 1] || train.route[train.route.length - 1];
+  const currentIdx = displayStops.findIndex((s) => s.status === 'current');
+  const hasCurrent = currentIdx >= 0;
+  // The single symbolic train marker is inserted after this stop row index.
+  const markerIndex = liveActive ? live.position.insertIndex : null;
+  const currentStation = liveActive
+    ? displayStops[currentIdx >= 0 ? currentIdx : 0]
+    : displayStops[activeStationIdx] || displayStops[0];
+  const nextStation = liveActive
+    ? displayStops[currentIdx + 1] || displayStops[displayStops.length - 1]
+    : displayStops[activeStationIdx + 1] || displayStops[displayStops.length - 1];
 
   const handleSpeakAnnouncement = async () => {
     setIsAnnouncing(true);
@@ -109,7 +177,7 @@ export const LiveTrainTracker: React.FC<LiveTrainTrackerProps> = ({ train, onOpe
       train.trainNumber,
       train.trainName,
       currentStation.stationName,
-      currentStation.platform
+      currentStation.platform ?? '—'
     );
     setIsAnnouncing(false);
   };
@@ -134,16 +202,11 @@ export const LiveTrainTracker: React.FC<LiveTrainTrackerProps> = ({ train, onOpe
     }
   };
 
-  const handleRefreshGPS = () => {
+  const handleRefreshLive = () => {
     setIsRefreshing(true);
+    setLiveRefresh((n) => n + 1);
     setTimeout(() => {
       setIsRefreshing(false);
-      confetti({
-        particleCount: 30,
-        spread: 40,
-        origin: { y: 0.4 },
-        colors: ['#10B981', '#FF5A1F'],
-      });
     }, 800);
   };
 
@@ -183,12 +246,19 @@ export const LiveTrainTracker: React.FC<LiveTrainTrackerProps> = ({ train, onOpe
 
           {/* Quick Action Buttons */}
           <div className="flex flex-wrap items-center gap-2.5">
-            {/* Speedometer Badge */}
+            {/* Speedometer Badge — NTES provides no GPS speed */}
             <div className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-[#FAF7F2] border border-[#EFE8DE] text-[#1C1917]">
               <Gauge className="w-4 h-4 text-[#FF5A1F]" />
               <div>
                 <span className="block text-[9px] uppercase font-bold text-[#78716C]">Speed</span>
-                <span className="font-mono text-sm font-bold text-[#1C1917]">{currentSpeed} km/h</span>
+                {liveActive ? (
+                  <span className="font-mono text-sm font-bold text-[#78716C]">— Unavailable</span>
+                ) : (
+                  <span className="font-mono text-sm font-bold text-[#1C1917]">
+                    {currentSpeed} <span className="text-xs text-[#78716C]">km/h</span>{' '}
+                    <span className="text-[10px] text-amber-600 font-black">SIM</span>
+                  </span>
+                )}
               </div>
             </div>
 
@@ -203,25 +273,27 @@ export const LiveTrainTracker: React.FC<LiveTrainTrackerProps> = ({ train, onOpe
               <span>{isAnnouncing ? 'Announcing...' : 'Announce'}</span>
             </button>
 
-            {/* GPS Refresh Button */}
+            {/* Refresh NTES Live Button */}
             <button
-              onClick={handleRefreshGPS}
+              onClick={handleRefreshLive}
               className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-[#FAF7F2] hover:bg-[#FFF2EB] text-[#1C1917] hover:text-[#FF5A1F] border border-[#EFE8DE] text-xs font-bold transition-all shadow-xs"
-              title="Refresh Real-Time GPS"
+              title="Refresh NTES Live Feed"
             >
               <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-[#FF5A1F]' : 'text-[#78716C]'}`} />
               <span>Refresh</span>
             </button>
 
-            {/* Advance Demo Simulation Button */}
-            <button
-              onClick={handleAdvanceSimulation}
-              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-[#FF5A1F] hover:bg-[#E44810] text-white text-xs font-bold transition-all shadow-orange-glow"
-              title="Simulate Next Station Movement"
-            >
-              <Navigation className="w-3.5 h-3.5" />
-              <span>Move Next Stop</span>
-            </button>
+            {/* Advance Demo Simulation Button — only in DEMO/SIM mode */}
+            {!liveActive && (
+              <button
+                onClick={handleAdvanceSimulation}
+                className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-[#FF5A1F] hover:bg-[#E44810] text-white text-xs font-bold transition-all shadow-orange-glow"
+                title="Simulate Next Station Movement (demo)"
+              >
+                <Navigation className="w-3.5 h-3.5" />
+                <span>Move Next Stop</span>
+              </button>
+            )}
 
             {/* Share Button */}
             <button
@@ -234,30 +306,104 @@ export const LiveTrainTracker: React.FC<LiveTrainTrackerProps> = ({ train, onOpe
           </div>
         </div>
 
-        {/* Live Running Delay Status Ribbon */}
+        {/* Live Running Status Ribbon */}
         <div className="mt-6 pt-5 border-t border-[#EFE8DE] flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="relative flex h-3.5 w-3.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500"></span>
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 relative flex h-3.5 w-3.5">
+              {liveActive ? (
+                <>
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500"></span>
+                </>
+              ) : (
+                <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-amber-400"></span>
+              )}
             </div>
             <div>
-              <div className="text-sm font-bold text-[#1C1917] flex items-center gap-2">
-                <span>Departed {currentStation.stationName}</span>
-                <span className="text-xs font-mono px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">
-                  On Time
+              <div className="text-sm font-bold text-[#1C1917] flex flex-wrap items-center gap-2">
+                {liveActive ? (
+                  live.isBetweenStations ? (
+                    <span>
+                      Live: between <strong>{live.currentStation.name || '—'}</strong> and{' '}
+                      <strong>{live.nextStoppage.name || '—'}</strong>
+                    </span>
+                  ) : (
+                    <span>Current halt: {currentStation.stationName}</span>
+                  )
+                ) : (
+                  <span>DEMO: Departed {currentStation.stationName}</span>
+                )}
+                <span
+                  className={`text-xs font-mono px-2 py-0.5 rounded-md font-bold border ${
+                    liveActive
+                      ? live.punctual
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        : 'bg-amber-50 text-amber-700 border-amber-200'
+                      : 'bg-amber-50 text-amber-700 border-amber-200'
+                  }`}
+                >
+                  {liveActive
+                    ? live.punctual || live.delayMinutes <= 0
+                      ? 'On Time'
+                      : `${live.delayMinutes} min late`
+                    : 'SIMULATED'}
                 </span>
+                {liveActive && (
+                  <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                    NTES Live
+                  </span>
+                )}
               </div>
-              <p className="text-xs text-[#78716C] mt-0.5">
-                Next stop: <strong className="text-[#1C1917]">{nextStation.stationName}</strong> ({nextStation.stationCode}) • Platform {nextStation.platform} • ETA {nextStation.scheduledArrival}
-              </p>
+              {liveActive ? (
+                <p className="text-xs text-[#78716C] mt-1">
+                  Next stoppage:{' '}
+                  <strong className="text-[#1C1917]">
+                    {live.nextStoppage.name || '—'} ({live.nextStoppage.code || '—'})
+                  </strong>{' '}
+                  • last update <span className="font-mono">{live.lastUpdate || '—'}</span>
+                </p>
+              ) : (
+                <p className="text-xs text-[#78716C] mt-1">
+                  Next stop:{' '}
+                  <strong className="text-[#1C1917]">
+                    {nextStation.stationName} ({nextStation.stationCode})
+                  </strong>{' '}
+                  • Platform {nextStation.platform} • ETA {nextStation.scheduledArrival}
+                </p>
+              )}
             </div>
           </div>
 
           <div className="text-right text-xs font-mono text-[#78716C]">
-            GPS Telemetry: <span className="text-[#1C1917] font-bold">ISRO NavIC-Locked</span> • 1 min ago
+            {liveActive ? (
+              <>
+                Source: <span className="text-[#FF5A1F] font-bold">NTES Live</span> • journey{' '}
+                {live.journeyDate || '—'}
+              </>
+            ) : (
+              <>
+                Source: <span className="text-amber-600 font-bold">DEMO / SIMULATED</span> • not live
+              </>
+            )}
           </div>
         </div>
+
+        {/* NTES loading / failure states — never silently fall back to fake live data */}
+        {liveLoading && !liveError && (
+          <div className="mt-4 text-xs text-[#A8A29E] font-mono flex items-center gap-2">
+            <RefreshCw className="w-3 h-3 animate-spin" /> Fetching NTES live feed…
+          </div>
+        )}
+
+        {liveError && (
+          <div className="mt-4 rounded-2xl bg-[#FFF2EB] border border-[#FF5A1F]/30 p-3 flex items-start gap-3">
+            <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+            <p className="text-xs text-[#1C1917]">
+              <span className="font-bold">Live railway data temporarily unavailable.</span>{' '}
+              {liveError} Timeline below shows DEMO/SIMULATED data — it is not live.
+            </p>
+          </div>
+        )}
 
         {copied && (
           <motion.div
@@ -446,11 +592,18 @@ export const LiveTrainTracker: React.FC<LiveTrainTrackerProps> = ({ train, onOpe
             {/* Continuous Vertical Railway Track Line */}
             <div className="absolute left-[19px] sm:left-[27px] top-4 bottom-4 w-1 bg-[#EFE8DE] -translate-x-1/2 rounded-full" />
 
-            {train.route.map((station, idx) => {
-              const isPassed = idx < activeStationIdx;
-              const isCurrent = idx === activeStationIdx;
-              const isNext = idx === activeStationIdx + 1;
-              const isLast = idx === train.route.length - 1;
+            {displayStops.map((station, idx) => {
+              const isPassed = liveActive ? station.status === 'passed' : idx < activeStationIdx;
+              const isCurrent = liveActive ? station.status === 'current' : idx === activeStationIdx;
+              const isNext =
+                !isCurrent &&
+                !isPassed &&
+                (liveActive
+                  ? hasCurrent
+                    ? idx === currentIdx + 1
+                    : idx === 0
+                  : idx === activeStationIdx + 1);
+              const isLast = idx === displayStops.length - 1;
 
               return (
                 <React.Fragment key={station.stationCode}>
@@ -526,7 +679,7 @@ export const LiveTrainTracker: React.FC<LiveTrainTrackerProps> = ({ train, onOpe
                         <div className="p-2 rounded-xl bg-white border border-[#EFE8DE]">
                           <span className="block text-[10px] text-[#78716C] uppercase font-semibold">Actual Arr</span>
                           <span className={`font-mono font-bold ${station.delayMinutes > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
-                            {station.actualArrival}
+                            {station.actualArrival ?? '—'}
                           </span>
                         </div>
                         <div className="p-2 rounded-xl bg-white border border-[#EFE8DE]">
@@ -536,43 +689,125 @@ export const LiveTrainTracker: React.FC<LiveTrainTrackerProps> = ({ train, onOpe
                         <div className="p-2 rounded-xl bg-white border border-[#EFE8DE] flex items-center justify-between">
                           <div>
                             <span className="block text-[10px] text-[#78716C] uppercase font-semibold">Platform</span>
-                            <span className="font-bold text-[#FF5A1F]">PF #{station.platform}</span>
+                            <span className="font-bold text-[#FF5A1F]">PF #{station.platform ?? '—'}</span>
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* LIVE MOVING TRAIN MARKER (Between Stations on the vertical track) */}
-                  {isCurrent && !isLast && (
-                    <div className="relative my-2 py-3 px-4 rounded-2xl bg-gradient-to-r from-[#FF5A1F] to-[#FF7A00] text-white shadow-orange-glow flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-white text-[#FF5A1F] flex items-center justify-center font-bold shadow-xs">
-                          <TrainIcon className="w-5 h-5 animate-pulse" />
-                        </div>
-                        <div>
-                          <div className="text-xs font-black uppercase tracking-wider text-white/90">
-                            Live Train Location
-                          </div>
-                          <div className="text-sm font-bold">
-                            Running at {currentSpeed} km/h • 38 km to {nextStation.stationName}
+                  {/* SINGLE LIVE TRAIN POSITION MARKER — rendered once, after its stop row */}
+                  {markerIndex === idx && liveActive && (
+                    <div className="relative flex items-start gap-4 sm:gap-6 p-4 py-3">
+                      {/* Symbolic train riding the timeline rail */}
+                      <div className="absolute -left-[25px] sm:-left-[33px] top-4 -translate-x-1/2">
+                        <div className="relative">
+                          <span className="absolute inset-0 rounded-full bg-[#FF5A1F]/40 animate-ping" />
+                          <div className="relative w-9 h-9 rounded-full bg-gradient-to-br from-[#FF5A1F] to-[#FF7A00] text-white flex items-center justify-center shadow-orange-glow ring-4 ring-[#FF5A1F]/20">
+                            <TrainIcon className="w-5 h-5" />
                           </div>
                         </div>
                       </div>
-                      <div className="hidden sm:block text-right">
-                        <span className="text-[11px] font-mono bg-white/20 px-2.5 py-1 rounded-lg border border-white/25">
-                          ETA {nextStation.scheduledArrival}
-                        </span>
+
+                      {/* Compact LIVE TRAIN POSITION card */}
+                      <div className="flex-1 max-w-sm min-w-0 rounded-2xl bg-white border border-[#FF5A1F]/25 shadow-soft p-4">
+                        <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+                          <span className="text-[11px] font-black uppercase tracking-wider text-[#1C1917] flex items-center gap-1.5">
+                            <TrainIcon className="w-4 h-4 text-[#FF5A1F]" />
+                            LIVE TRAIN
+                            {live.position.atStation && (
+                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#FFF2EB] text-[#FF5A1F] border border-[#FF5A1F]/25">
+                                Halted
+                              </span>
+                            )}
+                          </span>
+                          <span className="text-[9px] font-mono uppercase font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            NTES Live
+                          </span>
+                        </div>
+
+                        <div className="space-y-1.5 text-xs">
+                          <div className="flex justify-between gap-3">
+                            <span className="text-[#78716C] flex items-center gap-1.5">
+                              <MapPin className="w-3 h-3 text-[#FF5A1F]" />
+                              Last reported
+                            </span>
+                            <span className="font-bold text-[#1C1917] text-right break-words">
+                              {live.position.lastReported.name || '—'} ({live.position.lastReported.code || '—'})
+                            </span>
+                          </div>
+
+                          <div className="flex justify-between gap-3">
+                            <span className="text-[#78716C] flex items-center gap-1.5">
+                              <Navigation className="w-3 h-3 text-[#FF5A1F] animate-pulse" />
+                              Upcoming
+                            </span>
+                            <span className="font-bold text-[#1C1917] text-right break-words">
+                              {live.position.nextImmediate.name || '—'} ({live.position.nextImmediate.code || '—'})
+                            </span>
+                          </div>
+
+                          {live.position.passingThrough && (
+                            <div className="flex justify-end">
+                              <span className="text-[9px] font-black uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                                Passing through / Non-stopping
+                              </span>
+                            </div>
+                          )}
+
+                          <div className="flex justify-between gap-3">
+                            <span className="text-[#78716C] flex items-center gap-1.5">
+                              <Flag className="w-3 h-3 text-[#FF5A1F]" />
+                              Next halt
+                            </span>
+                            <span className="font-bold text-[#1C1917] text-right break-words">
+                              {live.position.nextStoppage.name || '—'} ({live.position.nextStoppage.code || '—'})
+                            </span>
+                          </div>
+
+                          <div className="flex justify-between gap-3">
+                            <span className="text-[#78716C] flex items-center gap-1.5">
+                              <Clock className="w-3 h-3 text-[#FF5A1F]" />
+                              Delay
+                            </span>
+                            <span
+                              className={`font-mono font-bold ${
+                                live.punctual || live.delayMinutes <= 0
+                                  ? 'text-emerald-600'
+                                  : 'text-amber-600'
+                              }`}
+                            >
+                              {live.punctual || live.delayMinutes <= 0
+                                ? 'On Time'
+                                : `${live.delayMinutes} min late`}
+                            </span>
+                          </div>
+                        </div>
+
+                        {live.statusText && (
+                          <p className="mt-2.5 pt-2.5 border-t border-[#F0EAE1] text-[11px] leading-snug text-[#57534E]">
+                            {live.statusText}
+                          </p>
+                        )}
+
+                        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-mono text-[#A8A29E]">
+                          <span>Updated {live.lastUpdate || '—'}</span>
+                          <span>Speed · GPS · distance: unavailable</span>
+                        </div>
                       </div>
                     </div>
                   )}
 
-                  {/* Intermediate wayside stations if toggled */}
+                  {/* Intermediate wayside stations toggler */}
                   {showIntermediate && !isLast && (
                     <div className="pl-6 py-1 border-l-2 border-dashed border-[#EFE8DE] ml-3 text-[11px] text-[#A8A29E] space-y-1">
                       <div className="flex items-center gap-2">
                         <span className="w-1.5 h-1.5 rounded-full bg-[#D6CEC4]" />
-                        <span>Passes small junction • Speed limit 130 km/h</span>
+                        <span>
+                          {liveActive
+                            ? 'Pass-through/wayside stations: not included in the NTES live payload'
+                            : 'Intermediate waypoints: demo detail (SIMULATED)'}
+                        </span>
                       </div>
                     </div>
                   )}
@@ -698,7 +933,7 @@ export const LiveTrainTracker: React.FC<LiveTrainTrackerProps> = ({ train, onOpe
           <div className="bg-white rounded-3xl p-6 shadow-soft border border-[#EFE8DE] space-y-4">
             <h4 className="text-sm font-bold text-[#1C1917] flex items-center gap-2">
               <Radio className="w-4 h-4 text-emerald-600 animate-pulse" />
-              Live Telemetry & Safety Grid
+              Telemetry &amp; Safety (demo data)
             </h4>
 
             <div className="space-y-2.5 text-xs">
@@ -709,8 +944,8 @@ export const LiveTrainTracker: React.FC<LiveTrainTrackerProps> = ({ train, onOpe
 
               <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#FAF7F2] border border-[#EFE8DE]">
                 <span className="text-[#78716C]">Kavach Collision Shield</span>
-                <span className="font-bold text-emerald-600 flex items-center gap-1">
-                  <ShieldCheck className="w-3.5 h-3.5" /> Active & Locked
+                <span className="font-bold text-[#A8A29E] flex items-center gap-1">
+                  <ShieldCheck className="w-3.5 h-3.5" /> Demo
                 </span>
               </div>
 

@@ -1,10 +1,10 @@
 /**
- * RailBuddy ML API client.
+ * RailBuddy API client.
  *
- * Thin, typed wrapper around the existing FastAPI prediction backend
- * (ml/api/main.py). Nothing here re-implements the ML pipeline — it only
- * sends the exact request schema the backend already accepts and returns
- * the exact response schema it already produces.
+ * Wraps the FastAPI backend (ml/api/main.py):
+ *   - POST /api/predict          ML delay/ETA forecast
+ *   - GET  /api/live/train/{no}  real-time NTES running feed
+ *   - GET  /health               service health
  */
 
 export interface PredictRequest {
@@ -28,6 +28,93 @@ export interface PredictionResponse {
   data_source: string;
 }
 
+export interface NtesTrain {
+  TrainNumber?: string;
+  TrainName?: string;
+  Source?: string;
+  SourceName?: string;
+  Destination?: string;
+  DestinationName?: string;
+  Type?: string;
+}
+
+export interface NtesScheduleStation {
+  StationCode?: string;
+  StationName?: string;
+  STA?: string;
+  STD?: string;
+  Halt?: number;
+  Distance?: number;
+  Day?: number;
+  Sr?: number;
+}
+
+export interface NtesSchedule {
+  TrainName?: string;
+  TrainNumber?: string;
+  DaysOfRun?: string;
+  TravelTime?: string;
+  vStartDateList?: string[];
+  stations?: NtesScheduleStation[];
+}
+
+export interface NtesWaysideStop {
+  SC?: string;
+  SN?: string;
+  STA?: string;
+  STD?: string;
+  DIST?: number;
+  SrWTT?: number;
+}
+
+export interface NtesLiveStop {
+  SC: string;
+  SN?: string;
+  STA?: string;
+  STD?: string;
+  DARR?: string;
+  DDEP?: string;
+  ETA?: string;
+  ETD?: string;
+  PF?: string;
+  ISD?: boolean;
+  ISA?: boolean;
+  DIST?: number;
+  WTTSTNS?: NtesWaysideStop[];
+}
+
+export interface NtesLiveStatus {
+  TN?: string;
+  TNM?: string;
+  SRC?: string;
+  DSTN?: string;
+  LSTN?: string;
+  LSTNN?: string;
+  NSTN?: string;
+  NSTNN?: string;
+  NPSTN?: string;
+  NPSTNN?: string;
+  LDEL?: number;
+  ISPTT?: boolean;
+  LTIME?: string;
+  LUPDFULL?: string;
+  LASTUPD?: string;
+  TRUNST?: number;
+  STNS?: NtesLiveStop[];
+}
+
+export interface LiveTrainPayload {
+  success: boolean;
+  data_source: string;
+  train_number: string;
+  journey_date_used?: string;
+  error?: string;
+  search?: { Trains?: NtesTrain[] };
+  train_info?: Record<string, unknown>;
+  schedule?: NtesSchedule;
+  live_status?: NtesLiveStatus;
+}
+
 const DEFAULT_API_BASE_URL = 'http://127.0.0.1:8000';
 
 export function getApiBaseUrl(): string {
@@ -48,6 +135,29 @@ function extractErrorDetail(body: unknown, status: number): string {
     }
   }
   return `Request failed with HTTP ${status}`;
+}
+
+export async function fetchLiveTrain(
+  trainNumber: string,
+  signal?: AbortSignal,
+): Promise<LiveTrainPayload> {
+  const res = await fetch(
+    `${getApiBaseUrl()}/api/live/train/${encodeURIComponent(trainNumber)}`,
+    { signal },
+  );
+
+  if (!res.ok) {
+    let body: unknown = null;
+    try {
+      body = await res.json();
+    } catch {
+      /* non-JSON error body — fall through to generic message */
+    }
+    throw new Error(extractErrorDetail(body, res.status));
+  }
+
+  const data: unknown = await res.json();
+  return data as LiveTrainPayload;
 }
 
 export async function predictDelay(
