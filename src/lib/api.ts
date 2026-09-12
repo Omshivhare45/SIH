@@ -103,6 +103,12 @@ export interface NtesLiveStatus {
   STNS?: NtesLiveStop[];
 }
 
+export interface LiveTrainPipelineStep {
+  step: string;
+  success: boolean;
+  detail: string;
+}
+
 export interface LiveTrainPayload {
   success: boolean;
   data_source: string;
@@ -113,6 +119,7 @@ export interface LiveTrainPayload {
   train_info?: Record<string, unknown>;
   schedule?: NtesSchedule;
   live_status?: NtesLiveStatus;
+  pipeline?: LiveTrainPipelineStep[];
 }
 
 const DEFAULT_API_BASE_URL = 'http://127.0.0.1:8000';

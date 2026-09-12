@@ -19,7 +19,7 @@ from __future__ import annotations
 import datetime
 import threading
 import time
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 from ntes import NTESClient, NTESError, NTESCryptoError
 
@@ -50,26 +50,46 @@ def _parse_date(s: str) -> Optional[datetime.date]:
         return None
 
 
-def _resolve_journey_date(client: NTESClient, train_no: str, requested: Optional[str]) -> str:
-    """Today's date if the train runs today, else the most recent valid run day."""
+def _resolve_journey_date(
+    schedule: Optional[dict[str, Any]], requested: Optional[str]
+) -> tuple[str, str]:
+    """
+    Resolve the journey date for live_status() from valid running dates.
+
+    Returns (journey_date, detail):
+      - requested/today when it is a valid run day
+      - otherwise the most recent valid past run day
+      - otherwise the earliest valid run day
+      - otherwise today (fallback when the schedule payload has no date list)
+    """
     requested_d = _parse_date(requested) if requested else datetime.date.today()
     if requested_d is None:
         requested_d = datetime.date.today()
 
-    try:
-        sched = client.schedule(train_no, "")
-        valid = [_parse_date(d) for d in (sched.get("vStartDateList") or [])]
-        valid = [d for d in valid if d is not None]
+    valid = [
+        d
+        for d in (_parse_date(v) for v in (schedule or {}).get("vStartDateList") or [])
+        if d is not None
+    ]
+    fmt = requested_d.strftime(_DATE_FMT)
+
+    if valid:
         if requested_d in valid:
-            return requested_d.strftime(_DATE_FMT)
+            return fmt, f"{fmt} is a valid run day"
         past = [d for d in valid if d <= requested_d]
         if past:
-            return max(past).strftime(_DATE_FMT)
-        if valid:
-            return min(valid).strftime(_DATE_FMT)
-    except (NTESError, NTESCryptoError):
-        pass
-    return requested_d.strftime(_DATE_FMT)
+            chosen = max(past)
+            return chosen.strftime(_DATE_FMT), (
+                f"{fmt} not in valid run days; using latest valid past day "
+                f"{chosen.strftime(_DATE_FMT)}"
+            )
+        chosen = min(valid)
+        return chosen.strftime(_DATE_FMT), (
+            f"no valid run day on/before {fmt}; using earliest valid day "
+            f"{chosen.strftime(_DATE_FMT)}"
+        )
+
+    return fmt, f"no valid run dates in schedule payload; defaulting to {fmt}"
 
 
 def fetch_debug_payload(train_number: str, journey_date: Optional[str] = None) -> dict[str, Any]:
@@ -85,11 +105,19 @@ def fetch_debug_payload(train_number: str, journey_date: Optional[str] = None) -
           "search": {...raw NTES...},
           "train_info": {...raw NTES...},
           "schedule": {...raw NTES...},
-          "live_status": {...raw NTES...}
+          "live_status": {...raw NTES...},
+          "pipeline": [
+            {"step": "search", "success": True,  "detail": "matched 1 train(s)"},
+            {"step": "train_info", ...},
+            {"step": "schedule", ...},
+            {"step": "journey_date", ...},
+            {"step": "live_status", ...}
+          ]
         }
 
-    On failure the fetched fields are preserved and `success` is False with the
-    real exception message in `error`.
+    The `pipeline` array records per-step provenance: which NTES call succeeded
+    or failed and why, so callers can pinpoint the failing stage. The schedule
+    is fetched exactly once and reused for journey-date resolution.
     """
     key = f"{train_number}|{journey_date or ''}"
     cached = _cache_get(key)
@@ -97,27 +125,79 @@ def fetch_debug_payload(train_number: str, journey_date: Optional[str] = None) -
         return cached
 
     client = NTESClient(timeout=20, retries=1)
-    journey = _resolve_journey_date(client, train_number, journey_date)
-
     payload: dict[str, Any] = {
         "success": True,
         "data_source": "ntes",
         "train_number": str(train_number),
-        "journey_date_used": journey,
     }
+    pipeline: list[dict[str, Any]] = []
+    train_no = str(train_number)
 
-    for label, call in (
-        ("search", lambda: client.search(str(train_number))),
-        ("train_info", lambda: client.train_info(str(train_number))),
-        ("schedule", lambda: client.schedule(str(train_number))),
-        ("live_status", lambda: client.live_status(str(train_number), journey)),
-    ):
+    def run_step(
+        step: str,
+        report: Callable[[Any], tuple[str, bool]],
+        call: Callable[[], Any],
+    ) -> Any:
         try:
-            payload[label] = call()
+            result = call()
         except (NTESError, NTESCryptoError, Exception) as exc:  # noqa: BLE001
-            payload[label] = None
+            payload[step] = None
+            msg = f"{type(exc).__name__}: {exc}"
+            pipeline.append({"step": step, "success": False, "detail": msg})
             payload["success"] = False
-            payload["error"] = f"{label}() raised {type(exc).__name__}: {exc}"
+            payload["error"] = f"{step}() raised {msg}"
+            return None
+        detail, ok = report(result)
+        payload[step] = result
+        pipeline.append({"step": step, "success": ok, "detail": detail})
+        if not ok:
+            payload["success"] = False
+            payload["error"] = f"{step}: {detail}"
+        return result
 
+    run_step(
+        "search",
+        lambda r: (
+            f"matched {len(r.get('Trains') or [])} train(s)",
+            bool(r.get("Trains")),
+        ),
+        lambda: client.search(train_no),
+    )
+
+    run_step(
+        "train_info",
+        lambda r: (
+            f"{r.get('TrainName') or r.get('trainName') or 'train info loaded'} "
+            f"({r.get('TrainNumber') or train_no})",
+            True,
+        ),
+        lambda: client.train_info(train_no),
+    )
+
+    schedule_res = run_step(
+        "schedule",
+        lambda r: (
+            f"{len(r.get('stations') or [])} schedule stations; "
+            f"{len(r.get('vStartDateList') or [])} valid run date(s)",
+            bool(r),
+        ),
+        lambda: client.schedule(train_no),
+    )
+
+    journey, journey_detail = _resolve_journey_date(schedule_res, journey_date)
+    payload["journey_date_used"] = journey
+    pipeline.append({"step": "journey_date", "success": True, "detail": journey_detail})
+
+    run_step(
+        "live_status",
+        lambda r: (
+            f"{len(r.get('STNS') or [])} stops; last event "
+            f"{(r.get('LTIME') or '').strip() or 'n/a'}",
+            bool(r),
+        ),
+        lambda: client.live_status(train_no, journey),
+    )
+
+    payload["pipeline"] = pipeline
     _cache_put(key, payload)
     return payload
