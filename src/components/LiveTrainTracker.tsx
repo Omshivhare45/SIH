@@ -102,6 +102,17 @@ export const LiveTrainTracker: React.FC<LiveTrainTrackerProps> = ({ train, onOpe
     fetchLiveTrain(train.trainNumber, controller.signal)
       .then((payload) => {
         if (controller.signal.aborted) return;
+        if (!payload.success) {
+          const failed = (payload.pipeline || []).filter((s) => !s.success);
+          const reason = failed.length
+            ? `Stage "${failed.map((f) => f.step).join('", "')}" failed: ${failed
+                .map((f) => f.detail)
+                .join('; ')}`
+            : payload.error || 'Live railway data temporarily unavailable';
+          setLive(null);
+          setLiveError(reason);
+          return;
+        }
         const timeline = buildLiveTimeline(payload);
         if (timeline) {
           setLive(timeline);

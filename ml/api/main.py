@@ -115,14 +115,17 @@ def live_train(train_number: str, journey_date: Optional[str] = None):
     Real-time NTES feed for a train (debug payload).
 
     Returns the raw NTES responses from search / train_info / schedule /
-    live_status labelled with data_source="ntes". No normalization or ML
-    integration yet.
+    live_status labelled with data_source="ntes", plus a `pipeline` array with
+    per-step provenance. Partial failures are returned with HTTP 200 and
+    success=False so callers can see exactly which stage failed; HTTP 502
+    is reserved for hard crashes of the provider itself.
     """
     from ml.api.live import fetch_debug_payload
 
-    payload = fetch_debug_payload(str(train_number), journey_date)
-    if not payload.get("success"):
-        raise HTTPException(502, payload.get("error") or "NTES live feed unavailable")
+    try:
+        payload = fetch_debug_payload(str(train_number), journey_date)
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(502, f"NTES live feed unavailable: {exc}")
     return payload
 
 
