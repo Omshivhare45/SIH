@@ -14,6 +14,7 @@ import {
   Zap,
   CheckCircle2,
   AlertTriangle,
+  BrainCircuit,
   Radio,
   Sparkles,
   ArrowRight,
@@ -23,11 +24,13 @@ import {
   Eye,
   EyeOff,
   CloudSun,
+  Cpu,
   Flame,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Train, RouteStation } from '../types/train';
 import { railAudio } from '../utils/audio';
+import { predictDelay, PredictionResponse } from '../lib/api';
 
 interface LiveTrainTrackerProps {
   train: Train;
@@ -43,6 +46,12 @@ export const LiveTrainTracker: React.FC<LiveTrainTrackerProps> = ({ train, onOpe
   const [showIntermediate, setShowIntermediate] = useState<boolean>(false);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
+  // AI delay & ETA prediction state
+  const [prediction, setPrediction] = useState<PredictionResponse | null>(null);
+  const [predictionLoading, setPredictionLoading] = useState<boolean>(false);
+  const [predictionError, setPredictionError] = useState<string | null>(null);
+  const [forecastAttempt, setForecastAttempt] = useState<number>(0);
+
   // Realistic live speed fluctuation
   useEffect(() => {
     const interval = setInterval(() => {
@@ -54,6 +63,42 @@ export const LiveTrainTracker: React.FC<LiveTrainTrackerProps> = ({ train, onOpe
     }, 2500);
     return () => clearInterval(interval);
   }, []);
+
+  // AI delay & ETA forecast — calls the RailBuddy ML backend whenever the active station changes
+  useEffect(() => {
+    const controller = new AbortController();
+    const station = train.route[activeStationIdx] || train.route[0];
+    const next = train.route[activeStationIdx + 1];
+
+    const runForecast = async () => {
+      setPredictionLoading(true);
+      setPredictionError(null);
+      try {
+        const result = await predictDelay(
+          {
+            train_number: train.trainNumber,
+            station_code: station.stationCode,
+            delay_current_minutes: station.delayMinutes ?? train.currentStatus.delayMinutes ?? 0,
+            current_speed_kmh: currentSpeed,
+            distance_covered_km: station.distanceKm || train.currentStatus.distanceCoveredKm || undefined,
+            target: next?.stationCode,
+          },
+          controller.signal,
+        );
+        setPrediction(result);
+      } catch (err) {
+        if ((err as Error).name === 'AbortError') return;
+        setPrediction(null);
+        setPredictionError((err as Error).message || 'Could not reach the AI engine');
+      } finally {
+        if (!controller.signal.aborted) setPredictionLoading(false);
+      }
+    };
+
+    runForecast();
+    return () => controller.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [train.trainNumber, train.currentStatus.delayMinutes, activeStationIdx, forecastAttempt]);
 
   const currentStation = train.route[activeStationIdx] || train.route[0];
   const nextStation = train.route[activeStationIdx + 1] || train.route[train.route.length - 1];
@@ -222,6 +267,146 @@ export const LiveTrainTracker: React.FC<LiveTrainTrackerProps> = ({ train, onOpe
           >
             ✓ Live Tracking link copied to clipboard!
           </motion.div>
+        )}
+      </div>
+
+      {/* AI DELAY & ETA FORECAST (live ML prediction from ml/api/main.py) */}
+      <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-soft border border-[#EFE8DE] relative overflow-hidden">
+        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#FF5A1F] via-[#FF8A00] to-[#FF5A1F]" />
+
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#FF5A1F] to-[#FF7A00] text-white flex items-center justify-center shadow-orange-glow shrink-0">
+              <BrainCircuit className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="text-base sm:text-lg font-black text-[#1C1917] tracking-tight">
+                AI Delay &amp; ETA Forecast
+              </h3>
+              <p className="text-xs text-[#78716C] font-medium">
+                Predicted running delay toward the next stop from the RailBuddy ML engine
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            {prediction && !predictionLoading && (
+              <span className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                ML Engine Live
+              </span>
+            )}
+            {predictionError && (
+              <button
+                onClick={() => setForecastAttempt((n) => n + 1)}
+                className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-[#FFF2EB] text-[#FF5A1F] border border-[#FF5A1F]/30 hover:bg-[#FFE5D6] transition-all"
+              >
+                <RefreshCw className={`w-3 h-3 ${predictionLoading ? 'animate-spin' : ''}`} />
+                Retry AI Forecast
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* LOADING STATE */}
+        {predictionLoading && (
+          <div className="flex items-center justify-center gap-3 py-6 border border-dashed border-[#EFE8DE] rounded-2xl bg-[#FAF7F2]">
+            <div className="w-5 h-5 rounded-full border-2 border-[#FF5A1F] border-t-transparent animate-spin" />
+            <span className="text-sm font-semibold text-[#78716C]">
+              AI engine is computing the delay forecast…
+            </span>
+          </div>
+        )}
+
+        {/* ERROR STATE (backend unavailable — rest of UI stays intact) */}
+        {!predictionLoading && predictionError && (
+          <div className="rounded-2xl bg-[#FFF2EB] border border-[#FF5A1F]/30 p-4 flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-bold text-[#1C1917]">
+                AI prediction temporarily unavailable
+              </p>
+              <p className="text-xs text-[#78716C] mt-0.5 break-words">
+                {predictionError}. Start the FastAPI backend with{' '}
+                <code className="font-mono text-[#FF5A1F] bg-white px-1 py-0.5 rounded border border-[#EFE8DE]">
+                  python -m ml.api.main
+                </code>{' '}
+                and retry.
+              </p>
+              <button
+                onClick={() => setForecastAttempt((n) => n + 1)}
+                className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#FF5A1F] hover:bg-[#E44810] text-white text-xs font-bold transition-all shadow-orange-glow"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                Retry AI Forecast
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* SUCCESS STATE */}
+        {!predictionLoading && !predictionError && prediction && (
+          <>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              {/* Predicted Delay */}
+              <div className="rounded-2xl bg-[#FAF7F2] border border-[#EFE8DE] p-4">
+                <span className="block text-[10px] uppercase font-bold tracking-wider text-[#78716C]">
+                  Predicted Delay
+                </span>
+                <div className={`mt-1 font-mono text-2xl sm:text-3xl font-black ${prediction.predicted_delay_minutes > 5 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                  {prediction.predicted_delay_minutes}<span className="text-sm font-bold text-[#78716C] ml-0.5">min</span>
+                </div>
+                <span className="text-[11px] text-[#A8A29E] font-medium mt-0.5 block">
+                  {prediction.predicted_delay_minutes > 5 ? 'Running later than schedule' : 'Running close to schedule'}
+                </span>
+              </div>
+
+              {/* Predicted ETA */}
+              <div className="rounded-2xl bg-[#FAF7F2] border border-[#EFE8DE] p-4">
+                <span className="block text-[10px] uppercase font-bold tracking-wider text-[#78716C]">
+                  Predicted ETA
+                </span>
+                <div className="mt-1 font-mono text-2xl sm:text-3xl font-black text-[#FF5A1F]">
+                  {prediction.predicted_eta}
+                </div>
+                <span className="text-[11px] text-[#A8A29E] font-medium mt-0.5 block break-words">
+                  Sched. {prediction.scheduled_arrival} at {prediction.target_station}
+                </span>
+              </div>
+
+              {/* Confidence */}
+              <div className="rounded-2xl bg-[#FAF7F2] border border-[#EFE8DE] p-4 lg:col-span-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-[#78716C]">
+                    AI Confidence
+                  </span>
+                  <span className="font-mono text-lg font-black text-[#1C1917]">
+                    {(prediction.confidence * 100).toFixed(0)}%
+                  </span>
+                </div>
+                <div className="mt-3 h-2.5 rounded-full bg-[#EFE8DE] overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-[#FF5A1F] to-[#FF7A00] transition-all duration-700"
+                    style={{ width: `${Math.max(0, Math.min(100, prediction.confidence * 100))}%` }}
+                  />
+                </div>
+                <span className="text-[11px] text-[#A8A29E] font-medium mt-2 block">
+                  Model certainty based on held-out test accuracy
+                </span>
+              </div>
+            </div>
+
+            {/* Model provenance footer */}
+            <div className="mt-4 pt-3 border-t border-[#EFE8DE] flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[10px] font-mono text-[#A8A29E]">
+              <span className="flex items-center gap-1.5">
+                <Cpu className="w-3 h-3 text-[#FF5A1F]" />
+                <span className="text-[#78716C]">Model:</span> {prediction.model_used}
+              </span>
+              <span>
+                Data source: <span className="text-[#78716C] font-bold">{prediction.data_source}</span>
+              </span>
+            </div>
+          </>
         )}
       </div>
 

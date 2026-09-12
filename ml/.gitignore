@@ -1,0 +1,6 @@
+# Trained model artifacts — large, not committed
+artifacts/
+models/
+*.joblib
+__pycache__/
+*.pyc
